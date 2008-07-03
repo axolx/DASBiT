@@ -159,16 +159,23 @@ class DASBiT_Controller_Front
             }
 
             // Directly require it, we may use it surely
-            $controllerName = $split[0] . '_Controller';
+            $controllerName = strtolower($split[0]);
+            $className      = $split[0] . '_Controller';
             
             require_once $controllerPath;
             
-            if (class_exists($controllerName) === false) {
+            if (class_exists($className) === false) {
                 require_once 'DASBiT/Controller/Exception.php';
-                throw new DASBiT_Controller_Exception('Controller class does not exist (' . $controllerName . ')');
+                throw new DASBiT_Controller_Exception('Controller class does not exist (' . $className . ')');
             }
             
-            $this->_controllers[] = new $controllerName;
+            $controller = new $className;
+            if (($controller instanceof DASBiT_Controller_Action) === false) {
+                require_once 'DASBiT/Controller/Exception.php';
+                throw new DASBiT_Controller_Exception('Controller class does not inherit DASBiT_Controller_Action (' . $className . ')');                
+            }
+            
+            $this->_controllers[$controllerName] = $controller;
         }
         
         return $this;

@@ -26,11 +26,25 @@
 class DASBiT_Controller_Response
 {
     /**
+     * Send types
+     */
+    const TYPE_MESSAGE = 'message';
+    const TYPE_ACT     = 'act';
+    const TYPE_NOTICE  = 'notice';
+    
+    /**
      * Socket
      *
      * @var resource
      */
     protected static $_socket = null;
+    
+    /**
+     * When was the last message sent
+     *
+     * @var float
+     */
+    protected static $_lastMessageTime = null;
     
     /**
      * Set the socket to respond to
@@ -57,5 +71,46 @@ class DASBiT_Controller_Response
         }
         
         socket_write(self::$_socket, $string . "\n", strlen($string) + 1);
+        
+        return $this;
+    }
+    
+    /**
+     * Send a message to a user or channel
+     *
+     * @param  string                           $message The message to send
+     * @param  string|DASBiT_Controller_Request $target  Where to send the message
+     * @param  string                           $type    Type of the message, see
+     *                                                   DASBiT_Controller_Response::TYPE_*
+     * @return DASBiT_Controller_Response    
+     */
+    public function send($message, $target, $type = self::TYPE_MESSAGE)
+    {
+        if (self::$_lastMessageTime !== null) {
+            while (microtime(true) - self::$_lastMessageTime < 0.5) {
+                usleep(250000);
+            }            
+        }
+        
+        if ($target instanceof DASBiT_Controller_Request) {
+            $target = $target->getSource();
+        }
+        
+        switch ($type) {
+            case self::TYPE_MESSAGE:
+                $this->send('PRIVMSG ' . $target . ' :' . $message);
+                break;
+                
+            case self::TYPE_ACT:
+                $chr = chr(1);
+                $this->send('PRIVMSG ' . $target . ' :' . $chr . 'ACTION ' . $message . $chr);
+                break;
+                
+            case self::TYPE_NOTICE:
+                $this->send('NOTICE ' . $target . ' :' . $message);
+                break;
+        }
+        
+        self::$_lastMessageTime = microtime(true);
     }
 }
