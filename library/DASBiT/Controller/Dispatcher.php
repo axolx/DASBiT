@@ -320,7 +320,9 @@ class DASBiT_Controller_Dispatcher
                 if ($words[3] === $this->_currentNickname) {
                     DASBiT_Controller_Front::getInstance()->getLogger()->log('Kicked from ' . $words[2]);
                     
-                    // @todo Kicked plugin here
+                    $this->_removeChannel($words[2]);
+                    
+                    DASBiT_Controller_Front::getInstance()->getPluginBroker()->kickedFromChannel($words[2]);
                 } else {
                     $channel = $this->_getChannel($words[2]);
                     $channel->removeUser($words[3]);
@@ -350,6 +352,7 @@ class DASBiT_Controller_Dispatcher
     protected function _dispatchCommandReply($responseCode, $line, array $words)
     {
         switch ($responseCode) {
+            // Connected to server
             case '376':
                 $this->_serverName = substr($words[0], 1);
                 DASBiT_Controller_Front::getInstance()->getLogger()->log('Connected to server');
@@ -357,11 +360,12 @@ class DASBiT_Controller_Dispatcher
                 $this->_delayTime = time();
                 $this->_connected = true;
 
-                // @todo Connect plugin here
+                DASBiT_Controller_Front::getInstance()->getPluginBroker()->connectedToServer();
                 break;
-                
+            
+            // User list received
             case '353':
-                $channel = $this->_getChannel($words[4]);
+                $channel = $this->_getChannel($words[4], true);
                 
                 $users = array_slice($words, 5);
                 foreach ($users as $user) {
@@ -479,14 +483,19 @@ class DASBiT_Controller_Dispatcher
     /**
      * Parse a raw channel name
      *
-     * @param  string $rawName
+     * @param  string  $rawName Raw name of the channel
+     * @param  boolean $reset   Wether to reset the channel or not
      * @return DASBiT_Irc_Channel
      */
-    protected function _getChannel($rawName)
+    protected function _getChannel($rawName, $reset = false)
     {
         $channelName = addcslashes(trim($rawName), "'");
         if ($channelName[0] === ':') {
             $channelName = substr($channelName, 1);
+        }
+        
+        if ($reset === true) {
+            $this->_removeChannel($rawName);
         }
         
         if (isset($this->_channels[$channelName]) === false) {
@@ -494,5 +503,23 @@ class DASBiT_Controller_Dispatcher
         }
         
         return $this->_channels[$channelName];
+    }
+    
+    /**
+     * Remove a channel
+     *
+     * @param  string $rawName
+     * @return void
+     */
+    protected function _removeChannel($rawName)
+    {
+        $channelName = addcslashes(trim($rawName), "'");
+        if ($channelName[0] === ':') {
+            $channelName = substr($channelName, 1);
+        }
+        
+        if (isset($this->_channels[$channelName]) === true) {
+            unset($this->_channels[$channelName]);
+        }                
     }
 }

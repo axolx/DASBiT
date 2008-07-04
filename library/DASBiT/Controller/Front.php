@@ -26,6 +26,11 @@
 require_once 'DASBiT/Controller/Dispatcher.php';
 
 /**
+ * @see DASBiT_Controller_Plugin_Broker
+ */
+require_once 'DASBiT/Controller/Plugin/Broker.php';
+
+/**
  * Front controller which handles the main loop
  */
 class DASBiT_Controller_Front
@@ -87,6 +92,13 @@ class DASBiT_Controller_Front
     protected $_logger;
     
     /**
+     * Plugin broker
+     *
+     * @var DASBiT_Controller_Plugin_Broker
+     */
+    protected $_pluginBroker;
+    
+    /**
      * Creates the singleton instance.
      * Checks the basic setup and prepares the dispatch loop
      */
@@ -103,6 +115,9 @@ class DASBiT_Controller_Front
         
         // Instantiate the dispatcher
         $this->_dispatcher = new DASBiT_Controller_Dispatcher();
+        
+        // Instantiate the plugin broker
+        $this->_pluginBroker = new DASBiT_Controller_Plugin_Broker();
     }
        
     /**
@@ -261,6 +276,29 @@ class DASBiT_Controller_Front
         }
 
         return $this->_logger;
+    }
+    
+    /**
+     * Get the plugin Broker
+     *
+     * @return DASBiT_Controller_Plugin_Broker
+     */
+    public function getPluginBroker()
+    {
+        return $this->_pluginBroker;
+    }
+    
+    /**
+     * Register a plugin with the plugin broker
+     *
+     * @param  DASBiT_Controller_Plugin_Abstract $plugin
+     * @return DASBiT_Controller_Front
+     */
+    public function registerPlugin(DASBiT_Controller_Plugin_Abstract $plugin)
+    {
+        $this->_pluginBroker->registerPlugin($plugin);
+        
+        return $this;
     }
     
     /**
