@@ -28,7 +28,7 @@ require_once 'DASBiT/Controller/Action/Interface.php';
 /**
  * Controller for looking up documentation
  */
-class Lookup_Controller implements DASBiT_Controller_Action_Interface
+class Manual_Controller implements DASBiT_Controller_Action_Interface
 {
     /**
      * Defined by DASBiT_Controller_Action_Interface
@@ -42,9 +42,10 @@ class Lookup_Controller implements DASBiT_Controller_Action_Interface
         $message = $request->getMessage();
         $params  = array_slice(explode(' ', $message), 1);
         
-        if ($params[0][0] === '@') {
-            $prefix      = substr($params[0], 1) . ', see: ';
-            $searchTerms = trim(implode(' ', array_slice($params, 1)));    
+        $lastParams = array_slice($params, -2);
+        if ($lastParams[0] === '@') {
+            $prefix      = $lastParams[1] . ', see: ';
+            $searchTerms = trim(implode(' ', array_slice($params, 0, -2)));    
         } else {
             $prefix      = '';
             $searchTerms = trim(implode(' ', $params));
@@ -64,7 +65,7 @@ class Lookup_Controller implements DASBiT_Controller_Action_Interface
         if (preg_match('#<li><a href="(/manual/en/.*?)">(.*?)  \\[en\\]</a></li>#', $result, $matches) === 1) {
             $response->send($prefix . trim($matches[2]) . ': http://framework.zend.com' . trim($matches[1]), $request);
         } else {
-            $response->send('Nothing found', $request);
+            $response->send('Nothing found for "' . $searchTerms . '"', $request);
         }
     }
 
