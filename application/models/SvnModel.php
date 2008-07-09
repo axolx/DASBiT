@@ -21,30 +21,15 @@
  */
 
 /**
- * @see DASBiT_Controller_Plugin_Abstract
+ * @see Zend_Db_Table
  */
-require_once 'DASBiT/Controller/Plugin/Abstract.php';
+require_once 'Zend/Db/Table.php';
 
 /**
- * Plugin for automatically joining previous channels after connect
+ * SVN model
  */
-class Plugin_AutoJoin extends DASBiT_Controller_Plugin_Abstract
+class SvnModel extends Zend_Db_Table
 {
-    /**
-     * Autjoin earlier channels
-     *
-     * @return void
-     */
-    public function postConnect()
-    {
-        $response = DASBiT_Controller_Response::getInstance();
-
-        $channels = simplexml_load_file(dirname(__FILE__) . '/../data/channels.xml');
-        foreach ($channels as $channel) {
-            $channel = (string) $channel;
-            
-            $response->sendRaw('JOIN ' . $channel);
-            DASBiT_Controller_Front::getInstance()->getLogger()->log('Joined ' . $channel);
-        }
-    }
+    protected $_primary = 'svn_id';
+    protected $_name    = 'svn';
 }

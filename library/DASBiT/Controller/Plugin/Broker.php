@@ -44,6 +44,30 @@ class DASBiT_Controller_Plugin_Broker
     }
     
     /**
+     * Called before dispatch loop starts
+     *
+     * @return void
+     */
+    public function init()
+    {
+        foreach ($this->_plugins as $plugin) {
+            $plugin->init();
+        }
+    }
+    
+    /**
+     * Called every 5 seconds
+     * 
+     * @return void
+     */
+    public function delayedCycle()
+    {
+        foreach ($this->_plugins as $plugin) {
+            $plugin->delayedCycle();
+        }
+    }
+    
+    /**
      * Called before the bot connects to the server
      *
      * @return void

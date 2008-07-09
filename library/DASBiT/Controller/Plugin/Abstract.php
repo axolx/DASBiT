@@ -26,11 +26,29 @@
 abstract class DASBiT_Controller_Plugin_Abstract
 {
     /**
+     * Called before dispatch loop starts
+     *
+     * @return void
+     */
+    public function init()
+    {
+    }
+    
+    /**
      * Called before the bot connects to the server
      *
      * @return void
      */
     public function preConnect()
+    {
+    }
+    
+    /**
+     * Called every 5 seconds
+     *
+     * @return void
+     */
+    public function delayedCycle()
     {
     }
     

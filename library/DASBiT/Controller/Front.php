@@ -74,6 +74,13 @@ class DASBiT_Controller_Front
     protected $_username = 'dasbit@dasprids.de';
     
     /**
+     * Prefix which is used for commands, must be a single character
+     *
+     * @var unknown_type
+     */
+    protected $_commandPrefix = '!';
+    
+    /**
      * Address of the server
      *
      * @var string
@@ -121,13 +128,6 @@ class DASBiT_Controller_Front
      * @var string
      */
     protected $_currentNickname;
-    
-    /**
-     * Alternative nickname
-     *
-     * @var string
-     */
-    protected $_alternateNickname = null;
     
     /**
      * Wether we are connected or not
@@ -260,11 +260,11 @@ class DASBiT_Controller_Front
                 require_once 'DASBiT/Controller/Exception.php';
                 throw new DASBiT_Controller_Exception('Controller class does not exist (' . $className . ')');
             }
-            
+                       
             $controller = new $className;
-            if (($controller instanceof DASBiT_Controller_Action) === false) {
+            if (($controller instanceof DASBiT_Controller_Action_Interface) === false) {
                 require_once 'DASBiT/Controller/Exception.php';
-                throw new DASBiT_Controller_Exception('Controller class does not inherit DASBiT_Controller_Action (' . $className . ')');                
+                throw new DASBiT_Controller_Exception('Controller class does not implement DASBiT_Controller_Action_Interface (' . $className . ')');                
             }
             
             $this->_controllers[$controllerName] = $controller;
@@ -312,6 +312,23 @@ class DASBiT_Controller_Front
         
         return $this;
     }
+    
+    /**
+     * Set the command prefix, must be a single character.
+     *
+     * @param  string $prefix
+     * @return DASBiT_Controller_Front
+     */
+    public function setCommandPrefix($prefix)
+    {
+        if (strlen($prefix) > 1) {
+            throw new InvalidArgumentException('Prefix must be a single character');
+        }
+        
+        $this->_commandPrefix = $prefix;
+        
+        return $this;
+    }
        
     /**
      * Set the logger to use
@@ -322,6 +339,8 @@ class DASBiT_Controller_Front
     public function setLogger(DASBiT_Log_Interface $logger)
     {
         $this->_logger = $logger;
+        
+        return $this;
     }
     
     /**
@@ -368,7 +387,10 @@ class DASBiT_Controller_Front
         }
         
         $this->_dispatchRunning = true;
-               
+
+        // Call init plugins
+        $this->_pluginBroker->init();
+        
         // Start the dispatch loop
         $this->_setServer($server);
         $this->_dispatchLoop();
@@ -388,7 +410,7 @@ class DASBiT_Controller_Front
         $buffer = '';        
         while (true) {
             $this->_delayedChecks();
-            
+                        
             $select = socket_select($read = array($this->_socket), $write, $except = null, 1);
             if ($select !== 0) {
                 if ($select !== false) {
@@ -431,7 +453,7 @@ class DASBiT_Controller_Front
             if ($this->_delayTime + 5 > time()) {
                 return;
             }
-            
+
             if ($this->_lastPongTime + 60 <= time()) {
                 $this->getLogger()->log('Maximum lag reached, reconnecting');
                 
@@ -446,6 +468,11 @@ class DASBiT_Controller_Front
             
             $response = DASBiT_Controller_Response::getInstance();
             $response->sendRaw('PING ' . $this->_serverName);
+            
+            $this->_delayTime = time();
+            
+            // Call cycle plugins
+            $this->_pluginBroker->delayedCycle();
         }
     }
     
@@ -506,11 +533,21 @@ class DASBiT_Controller_Front
         } else {
             // This is a default message
             $request = new DASBiT_Controller_Request($line, $this->_currentNickname);
-            
+
             // Call pre dispatch plugins
             $this->_pluginBroker->preDispatch($request);
             
-            // @todo Call controllers with the request
+            // Call controllers with the request
+            $words           = explode(' ', $request->getMessage());
+            $possibleCommand = $words[0];
+            if ($possibleCommand[0] === $this->_commandPrefix) {
+                $command = substr($possibleCommand, 1);
+
+                if (isset($this->_controllers[$command]) === true) {
+                    $this->_controllers[$command]->dispatch($request,
+                                                            DASBiT_Controller_Response::getInstance());
+                }
+            }
             
             // Call post dispatch plugins
             $this->_pluginBroker->postDispatch($request);
@@ -530,7 +567,7 @@ class DASBiT_Controller_Front
         switch ($command) {
             case 'NICK':
                 if ($this->_nicknameInUse === true and
-                    preg_match('#:' . $this->_alternateNickname
+                    preg_match('#:' . $this->_currentNickname
                                . '[^ ]+ NICK :'
                                . $this->_nickname
                                . '#',
@@ -538,7 +575,6 @@ class DASBiT_Controller_Front
                     $this->getLogger()->log('Original nickname regained');
                     
                     $this->_nicknameInUse     = false;
-                    $this->_alternateNickname = null;
                     $this->_currentNickname   = $this->_nickname;
                 }
                 break;
@@ -634,8 +670,7 @@ class DASBiT_Controller_Front
                     $response = DASBiT_Controller_Response::getInstance();
                     $response->sendRaw('NICK ' . $alternative);
                     
-                    $this->_alternateNickname = $alternative;
-                    $this->_currentNickname   = $this->_nickname;
+                    $this->_currentNickname = $alternative;
                 }
                 break;
                 

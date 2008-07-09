@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<default>
+	<nickname>Zend_Bot_V4</nickname>
+	<username>zend_bot@dasprids.de</username>
+	<server>irc.freenode.net:8000</server>
+	<prefix>!</prefix></default></config>

@@ -51,7 +51,7 @@ class DASBiT_Controller_Response
     /**
      * When was the last message sent
      *
-     * @var float
+     * @var int
      */
     protected $_lastMessageTime = null;
        
@@ -117,8 +117,8 @@ class DASBiT_Controller_Response
     public function send($message, $target, $type = self::TYPE_MESSAGE)
     {
         if ($this->_lastMessageTime !== null) {
-            while (microtime(true) - $this->_lastMessageTime < 0.5) {
-                usleep(250000);
+            while (($this->_lastMessageTime + 1) > time()) {
+                sleep(1);
             }            
         }
         
@@ -128,20 +128,22 @@ class DASBiT_Controller_Response
         
         switch ($type) {
             case self::TYPE_MESSAGE:
-                $this->send('PRIVMSG ' . $target . ' :' . $message);
+                $this->sendRaw('PRIVMSG ' . $target . ' :' . $message);
                 break;
                 
             case self::TYPE_ACT:
                 $chr = chr(1);
-                $this->send('PRIVMSG ' . $target . ' :' . $chr . 'ACTION ' . $message . $chr);
+                $this->sendRaw('PRIVMSG ' . $target . ' :' . $chr . 'ACTION ' . $message . $chr);
                 break;
                 
             case self::TYPE_NOTICE:
-                $this->send('NOTICE ' . $target . ' :' . $message);
+                $this->sendRaw('NOTICE ' . $target . ' :' . $message);
                 break;
         }
         
-        $this->_lastMessageTime = microtime(true);
+        $this->_lastMessageTime = time();
+        
+        return $this;
     }
     
     /**

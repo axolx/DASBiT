@@ -23,27 +23,66 @@
 /**
  * Set the include path
  */
-set_include_path(get_include_path()
+set_include_path('.'
                  . PATH_SEPARATOR
                  . dirname(__FILE__) . '/library'
                  . PATH_SEPARATOR
-                 . dirname(__FILE__) . '/application/plugins');
+                 . dirname(__FILE__) . '/application/plugins'
+                 . PATH_SEPARATOR
+                 . dirname(__FILE__) . '/application/models');
+
+/**
+ * @see Zend_Config_Xml
+ */
+require_once 'Zend/Config/Xml.php';
+
+/**
+ * @see Zend_Db
+ */
+require_once 'Zend/Db.php';
+
+/**
+ * @see Zend_Db_Table
+ */
+require_once 'Zend/Db/Table.php';
+
+/**
+ * @see AutoJoinPlugin
+ */
+require_once 'AutoJoinPlugin.php';
+
+/**
+ * @see UsersPlugin
+ */
+require_once 'UsersPlugin.php';
+
+/**
+ * @see SvnPlugin
+ */
+require_once 'SvnPlugin.php';
 
 /**
  * @see DASBiT_Controller_Front
  */
 require_once 'DASBiT/Controller/Front.php';
+                 
+// Get the config
+$config = new Zend_Config_Xml(dirname(__FILE__) . '/config.xml', 'default');
 
-/**
- * @see Plugin_AutoJoin
- */
-require_once 'AutoJoin.php';
+// Setup the database
+$db = Zend_Db::factory('pdo_sqlite',
+                       array('dbname' => dirname(__FILE__)
+                                         . '/application/data/dasbit.sqlite'));
+Zend_Db_Table::setDefaultAdapter($db);
 
-/**
- * Setup the front controller
- */
+// Setup the front controller
 $front = DASBiT_Controller_Front::getInstance();
 $front->setControllerDirectory(dirname(__FILE__) . '/application/controllers')
-      ->registerPlugin(new Plugin_AutoJoin())
-      ->dispatch('chat.freenode.net');
+      ->registerPlugin(new AutoJoinPlugin())
+      ->registerPlugin(new UsersPlugin())
+      ->registerPlugin(new SvnPlugin())
+      ->setNickname($config->nickname)
+      ->setUsername($config->username)
+      ->setCommandPrefix($config->prefix)
+      ->dispatch($config->server);
       

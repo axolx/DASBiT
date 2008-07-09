@@ -159,7 +159,7 @@ class DASBiT_Controller_Request
      */
     public function getMessage()
     {
-        return $this->_message();
+        return $this->_message;
     }
     
     /**
