@@ -61,7 +61,7 @@ class UsersPlugin extends DASBiT_Controller_Plugin_Abstract
         
         if ($row === null) {
             return false;
-        } else if ($row->user_password !== md5($password)) {
+        } else if ($row->user_password !== sha1(md5($password))) {
             return false;
         } else {
             self::$_loggedInUsers[] = $request->getIdent();
