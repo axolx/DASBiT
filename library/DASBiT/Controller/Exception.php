@@ -21,6 +21,11 @@
  */
 
 /**
+ * @see DASBiT_Exception
+ */
+require_once 'DASBiT/Exception.php';
+
+/**
  * Controller exception class
  */
 class DASBiT_Controller_Exception extends DASBiT_Exception

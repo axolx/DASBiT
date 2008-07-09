@@ -21,29 +21,9 @@
  */
 
 /**
- * Set the include path
+ * IRC Server class
  */
-set_include_path(get_include_path()
-                 . PATH_SEPARATOR
-                 . dirname(__FILE__) . '/library'
-                 . PATH_SEPARATOR
-                 . dirname(__FILE__) . '/application/plugins');
+class DASBiT_Irc_Server
+{
 
-/**
- * @see DASBiT_Controller_Front
- */
-require_once 'DASBiT/Controller/Front.php';
-
-/**
- * @see Plugin_AutoJoin
- */
-require_once 'AutoJoin.php';
-
-/**
- * Setup the front controller
- */
-$front = DASBiT_Controller_Front::getInstance();
-$front->setControllerDirectory(dirname(__FILE__) . '/application/controllers')
-      ->registerPlugin(new Plugin_AutoJoin())
-      ->dispatch('chat.freenode.net');
-      
+}

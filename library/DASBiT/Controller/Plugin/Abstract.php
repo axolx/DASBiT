@@ -21,26 +21,17 @@
  */
 
 /**
- * Controller Plugin broker
+ * Abstract class for controller plugins
  */
-class DASBiT_Controller_Plugin_Broker
+abstract class DASBiT_Controller_Plugin_Abstract
 {
     /**
-     * Plugins registered with the broker
+     * Called before the bot connects to the server
      *
-     * @var array
-     */
-    protected $_plugins = array();
-    
-    /**
-     * Register a plugin with the broker
-     *
-     * @param  DASBiT_Controller_Plugin_Abstract $plugin
      * @return void
      */
-    public function registerPlugin(DASBiT_Controller_Plugin_Abstract $plugin)
+    public function preConnect()
     {
-        $this->_plugins = $plugin;
     }
     
     /**
@@ -48,11 +39,28 @@ class DASBiT_Controller_Plugin_Broker
      *
      * @return void
      */
-    public function connectedToServer()
+    public function postConnect()
     {
-        foreach ($this->_plugins as $plugin) {
-            $plugin->connectedToServer();
-        }
+    }
+    
+    /**
+     * Called before dispatching a priv msg
+     *
+     * @param  DASBiT_Controller_Request $request The request object
+     * @return void
+     */
+    public function preDispatch(DASBiT_Controller_Request $request)
+    {
+    }
+    
+    /**
+     * Called after dispatching a privmsg
+     *
+     * @param  DASBiT_Controller_Request $request The request object
+     * @return void
+     */
+    public function postDispatch(DASBiT_Controller_Request $request)
+    {
     }
     
     /**
@@ -63,8 +71,5 @@ class DASBiT_Controller_Plugin_Broker
      */
     public function kickedFromChannel($channel)
     {
-        foreach ($this->_plugins as $plugin) {
-            $plugin->kickedFromChannel($channel);
-        }
     }
 }

@@ -21,7 +21,9 @@
  */
 
 /**
- * Response object which sends to the server
+ * Response object which sends to the server.
+ * 
+ * This is a singleton
  */
 class DASBiT_Controller_Response
 {
@@ -33,25 +35,53 @@ class DASBiT_Controller_Response
     const TYPE_NOTICE  = 'notice';
     
     /**
+     * Instance of the singleton
+     *
+     * @var DASBiT_Controller_Response
+     */
+    protected static $_instance = null;
+    
+    /**
      * Socket
      *
      * @var resource
      */
-    protected static $_socket = null;
+    protected $_socket = null;
     
     /**
      * When was the last message sent
      *
      * @var float
      */
-    protected static $_lastMessageTime = null;
+    protected $_lastMessageTime = null;
+       
+    /**
+     * Singleton constructor
+     */
+    protected function __construct()
+    {
+    }
+    
+    /**
+     * Get the singleton instance
+     *
+     * @return DASBiT_Controller_Response
+     */
+    public static function getInstance()
+    {
+        if (self::$_instance === null) {
+            self::$_instance = new self();
+        }
+        
+        return self::$_instance;
+    }
     
     /**
      * Set the socket to respond to
      *
      * @param resource $socket
      */
-    public static function setSocket($socket)
+    public function setSocket($socket)
     {
         $this->_socket = $socket;
     }
@@ -65,12 +95,12 @@ class DASBiT_Controller_Response
      */
     public function sendRaw($string)
     {
-        if (self::$_socket === null) {
+        if ($this->_socket === null) {
             require_once 'DASBiT/Controller/Exception.php';
             throw new DASBiT_Controller_Exception('Not connected to server');
         }
         
-        socket_write(self::$_socket, $string . "\n", strlen($string) + 1);
+        socket_write($this->_socket, $string . "\n", strlen($string) + 1);
         
         return $this;
     }
@@ -86,8 +116,8 @@ class DASBiT_Controller_Response
      */
     public function send($message, $target, $type = self::TYPE_MESSAGE)
     {
-        if (self::$_lastMessageTime !== null) {
-            while (microtime(true) - self::$_lastMessageTime < 0.5) {
+        if ($this->_lastMessageTime !== null) {
+            while (microtime(true) - $this->_lastMessageTime < 0.5) {
                 usleep(250000);
             }            
         }
@@ -111,6 +141,18 @@ class DASBiT_Controller_Response
                 break;
         }
         
-        self::$_lastMessageTime = microtime(true);
+        $this->_lastMessageTime = microtime(true);
+    }
+    
+    /**
+     * Disallow cloning of response object
+     * 
+     * @throws DASBiT_Controller_Exception As cloning is not allowed
+     * @return void
+     */
+    public function __clone()
+    {
+        require_once 'DASBiT/Controller/Exception.php';
+        throw new DASBiT_Controller_Exception('Cloning of response object is not allowed');
     }
 }

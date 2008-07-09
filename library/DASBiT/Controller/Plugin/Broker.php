@@ -21,17 +21,76 @@
  */
 
 /**
- * Abstract class for controller plugins
+ * Controller Plugin broker
  */
-abstract class DASBiT_Controller_Plugin_Abstract
+class DASBiT_Controller_Plugin_Broker
 {
+    /**
+     * Plugins registered with the broker
+     *
+     * @var array
+     */
+    protected $_plugins = array();
+    
+    /**
+     * Register a plugin with the broker
+     *
+     * @param  DASBiT_Controller_Plugin_Abstract $plugin
+     * @return void
+     */
+    public function registerPlugin(DASBiT_Controller_Plugin_Abstract $plugin)
+    {
+        $this->_plugins[] = $plugin;
+    }
+    
+    /**
+     * Called before the bot connects to the server
+     *
+     * @return void
+     */
+    public function preConnect()
+    {
+        foreach ($this->_plugins as $plugin) {
+            $plugin->preConnect();
+        }
+    }
+    
     /**
      * Called after the bot connected to the server
      *
      * @return void
      */
-    public function connectedToServer()
+    public function postConnect()
     {
+        foreach ($this->_plugins as $plugin) {
+            $plugin->postConnect();
+        }
+    }
+    
+    /**
+     * Called before dispatching a priv msg
+     *
+     * @param  DASBiT_Controller_Request $request The request object
+     * @return void
+     */
+    public function preDispatch(DASBiT_Controller_Request $request)
+    {
+        foreach ($this->_plugins as $plugin) {
+            $plugin->preDispatch($request);
+        }
+    }
+    
+    /**
+     * Called after dispatching a privmsg
+     *
+     * @param  DASBiT_Controller_Request $request The request object
+     * @return void
+     */
+    public function postDispatch(DASBiT_Controller_Request $request)
+    {
+        foreach ($this->_plugins as $plugin) {
+            $plugin->postDispatch($request);
+        }
     }
     
     /**
@@ -42,5 +101,8 @@ abstract class DASBiT_Controller_Plugin_Abstract
      */
     public function kickedFromChannel($channel)
     {
+        foreach ($this->_plugins as $plugin) {
+            $plugin->kickedFromChannel($channel);
+        }
     }
 }

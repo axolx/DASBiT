@@ -21,29 +21,30 @@
  */
 
 /**
- * Set the include path
+ * @see DASBiT_Controller_Plugin_Abstract
  */
-set_include_path(get_include_path()
-                 . PATH_SEPARATOR
-                 . dirname(__FILE__) . '/library'
-                 . PATH_SEPARATOR
-                 . dirname(__FILE__) . '/application/plugins');
+require_once 'DASBiT/Controller/Plugin/Abstract.php';
 
 /**
- * @see DASBiT_Controller_Front
+ * Plugin for automatically joining previous channels after connect
  */
-require_once 'DASBiT/Controller/Front.php';
+class Plugin_AutoJoin extends DASBiT_Controller_Plugin_Abstract
+{
+    /**
+     * Autjoin earlier channels
+     *
+     * @return void
+     */
+    public function postConnect()
+    {
+        $response = DASBiT_Controller_Response::getInstance();
 
-/**
- * @see Plugin_AutoJoin
- */
-require_once 'AutoJoin.php';
-
-/**
- * Setup the front controller
- */
-$front = DASBiT_Controller_Front::getInstance();
-$front->setControllerDirectory(dirname(__FILE__) . '/application/controllers')
-      ->registerPlugin(new Plugin_AutoJoin())
-      ->dispatch('chat.freenode.net');
-      
+        $channels = simplexml_load_file(dirname(__FILE__) . '/../data/channels.xml');
+        foreach ($channels as $channel) {
+            $channel = (string) $channel;
+            
+            $response->sendRaw('JOIN ' . $channel);
+            DASBiT_Controller_Front::getInstance()->getLogger()->log('Joined ' . $channel);
+        }
+    }
+}

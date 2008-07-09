@@ -21,14 +21,24 @@
  */
 
 /**
- * @see DASBiT_Controller_Dispatcher
- */
-require_once 'DASBiT/Controller/Dispatcher.php';
-
-/**
  * @see DASBiT_Controller_Plugin_Broker
  */
 require_once 'DASBiT/Controller/Plugin/Broker.php';
+
+/**
+ * @see DASBiT_Controller_Response
+ */
+require_once 'DASBiT/Controller/Response.php';
+
+/**
+ * @see DASBiT_Controller_Request
+ */
+require_once 'DASBiT/Controller/Request.php';
+
+/**
+ * @see DASBiT_Irc_Channel
+ */
+require_once 'DASBiT/Irc/Channel.php';
 
 /**
  * Front controller which handles the main loop
@@ -64,11 +74,81 @@ class DASBiT_Controller_Front
     protected $_username = 'dasbit@dasprids.de';
     
     /**
-     * Dispatcher to use 
+     * Address of the server
      *
-     * @var DASBiT_Controller_Dispatcher
+     * @var string
      */
-    protected $_dispatcher;
+    protected $_address = null;
+    
+    /**
+     * Port of the server
+     *
+     * @var integer
+     */
+    protected $_port = null;
+    
+    /**
+     * Servername to respond to in case
+     *
+     * @var string
+     */
+    protected $_serverName = null;
+    
+    /**
+     * Socket to the IRC server
+     *
+     * @var resource
+     */
+    protected $_socket;
+    
+    /**
+     * When the last pong was received
+     *
+     * @var integer
+     */
+    protected $_lastPongTime;
+    
+   /**
+     * Wether nickname is in use or not
+     *
+     * @var boolean
+     */
+    protected $_nicknameInUse = false;
+    
+    /**
+     * Current nickname
+     * 
+     * @var string
+     */
+    protected $_currentNickname;
+    
+    /**
+     * Alternative nickname
+     *
+     * @var string
+     */
+    protected $_alternateNickname = null;
+    
+    /**
+     * Wether we are connected or not
+     *
+     * @var boolean
+     */
+    protected $_connected = false;
+    
+    /**
+     * Channels which the bot is connected to
+     *
+     * @var array
+     */
+    protected $_channels = array();
+    
+    /**
+     * Time for delayed checks 
+     *
+     * @var integer
+     */
+    protected $_delayTime;
     
     /**
      * Wether the dispatch is running or not
@@ -113,9 +193,6 @@ class DASBiT_Controller_Front
         // This thing should run very long
         set_time_limit(0);
         
-        // Instantiate the dispatcher
-        $this->_dispatcher = new DASBiT_Controller_Dispatcher();
-        
         // Instantiate the plugin broker
         $this->_pluginBroker = new DASBiT_Controller_Plugin_Broker();
     }
@@ -146,14 +223,14 @@ class DASBiT_Controller_Front
      */
     public function setControllerDirectory($controllerDirectory)
     {
-        if (is_dir($applicationPath) === false) {
+        if (is_dir($controllerDirectory) === false) {
             require_once 'DASBiT/Controller/Exception.php';
             throw new DASBiT_Controller_Exception('Controller directory does not exist'); 
         }
         
-        $dir = dir($controllerDirectory . '/controllers');
+        $dir = dir($controllerDirectory);
         while (($file = $dir->read()) !== false) {
-            $controllerPath = $controllerDirectory . '/controllers/' . $file;
+            $controllerPath = $controllerDirectory . '/' . $file;
             $split          = explode('.', $file);
             $extension      = array_pop($split);
             
@@ -211,19 +288,13 @@ class DASBiT_Controller_Front
         
         $this->_nickname = $nickname;
         
+        if ($this->_connected === true) {
+            $this->_sendNickname();
+        }
+        
         return $this;
     }
-    
-    /**
-     * Get the nickname
-     *
-     * @return string
-     */
-    public function getNickname()
-    {
-        return $this->_nickname;
-    }
-    
+       
     /**
      * Set the username of the bot
      *
@@ -241,17 +312,7 @@ class DASBiT_Controller_Front
         
         return $this;
     }
-    
-    /**
-     * Get the username
-     *
-     * @return string
-     */
-    public function getUsername()
-    {
-        return $this->_username;
-    }
-    
+       
     /**
      * Set the logger to use
      * 
@@ -277,17 +338,7 @@ class DASBiT_Controller_Front
 
         return $this->_logger;
     }
-    
-    /**
-     * Get the plugin Broker
-     *
-     * @return DASBiT_Controller_Plugin_Broker
-     */
-    public function getPluginBroker()
-    {
-        return $this->_pluginBroker;
-    }
-    
+       
     /**
      * Register a plugin with the plugin broker
      *
@@ -313,19 +364,442 @@ class DASBiT_Controller_Front
     {       
         if ($this->_dispatchRunning === true) {
             require_once 'DASBiT/Controller/Exception.php';
-            throw new DASBiT_Controller_Exception('A dispatch is already running');        
+            throw new DASBiT_Controller_Exception('A dispatch loop is already running');        
         }
         
         $this->_dispatchRunning = true;
-        
-        if (is_string($server) === false) {
-            require_once 'DASBiT/Controller/Exception.php';
-            throw new DASBiT_Controller_Exception('Server must be a string');        
-        }
                
         // Start the dispatch loop
-        $this->_dispatcher->setServer($server)
-                          ->dispatchLoop();
+        $this->_setServer($server);
+        $this->_dispatchLoop();
+    }
+    
+    /**
+     * Main dispatch loop
+     * 
+     * This one while run *forever*, so don't plan to do stuff after calling this
+     *
+     * @return void
+     */
+    protected function _dispatchLoop()
+    {
+        $this->_connect();
+
+        $buffer = '';        
+        while (true) {
+            $this->_delayedChecks();
+            
+            $select = socket_select($read = array($this->_socket), $write, $except = null, 1);
+            if ($select !== 0) {
+                if ($select !== false) {
+                    $data = socket_read($this->_socket, 10240);
+                }
+                
+                if ($select !== false and $data !== false) {
+                    $buffer .= $data;
+                    
+                    $lineBreak = strpos($buffer, "\n");
+                    while ($lineBreak !== false) {
+                        $line = substr($buffer, 0, $lineBreak);
+    
+                        if (strlen($line) > 0) {
+                            $this->_dispatchLine(trim($line));
+                        }
+    
+                        $buffer    = substr($buffer, $lineBreak + 1);
+                        $lineBreak = strpos($buffer, "\n");
+                    }
+                } else {
+                    $errorString = socket_strerror(socket_last_error($this->_socket));
+                    $this->getLogger()->log('Connection to server lost, reconnecting in one minute. Reason: ' . $errorString);
+                    sleep(60);
+    
+                    $this->_connect();
+                }
+            }
+        }
+    }
+    
+    /**
+     * Run delayed checks, like regain of original nick or check of lag time
+     *
+     * @return void 
+     */
+    protected function _delayedChecks()
+    {
+        if ($this->_connected === true) {
+            if ($this->_delayTime + 5 > time()) {
+                return;
+            }
+            
+            if ($this->_lastPongTime + 60 <= time()) {
+                $this->getLogger()->log('Maximum lag reached, reconnecting');
+                
+                $this->_connect();
+            }
+            
+            if ($this->_nicknameInUse === true) {
+                $this->getLogger()->log('Trying to regain original nick');
+                
+                $this->_sendNickname();
+            }
+            
+            $response = DASBiT_Controller_Response::getInstance();
+            $response->sendRaw('PING ' . $this->_serverName);
+        }
+    }
+    
+    /**
+     * Dispatch a line from the server
+     *
+     * @param string $line
+     */
+    protected function _dispatchLine($line)
+    {
+        $words    = explode(' ', $line);
+        $response = DASBiT_Controller_Response::getInstance();
+        
+        // Respond to ping
+        if ($words[0] === 'PING' and isset($words[1]) === true) {
+            $response->sendRaw('PONG ' . $words[1]);
+            return;
+        }
+        
+        // If there are no further arguments, ignore it
+        if (isset($words[1]) === false) {
+            return;
+        }
+        
+        // See if there is a response code
+        if (is_numeric(($words[1]))) {
+            $responseCode = (int) $words[1];
+            
+            if ($responseCode > 400) {
+                $this->_dispatchErrorReply($responseCode, $line, $words);
+            } else {
+                $this->_dispatchCommandReply($responseCode, $line, $words);
+            }
+        } else if ($words[1] === 'PRIVMSG') {
+            $this->_dispatchPrivMsg($line, $words);
+        } else {
+            // Else handle the command
+            $this->_dispatchCommand($words[1], $line, $words);
+        }
+    }    
+   
+    /**
+     * Dispatch a private message
+     *
+     * @param string $line  The string frm the server
+     * @param array  $words The string splitted into words
+     */
+    protected function _dispatchPrivMsg($line, array $words)
+    {
+        // See what this is
+        if (count($words) > 4 and $words[2] === $this->_currentNickname and
+            strpos($words[3], chr(1) !== false)) {
+            // Looks like a CTCP command
+            if (preg_match('#^.*' . chr(1) . '([^ ]+)(.*)' . chr(1) . '.*$#', $line, $match) === 1) {
+                $ctcpCommand = strtoupper($matches[1]);
+                // @todo Handle some CTCP commands   
+            }
+        } else {
+            // This is a default message
+            $request = new DASBiT_Controller_Request($line, $this->_currentNickname);
+            
+            // Call pre dispatch plugins
+            $this->_pluginBroker->preDispatch($request);
+            
+            // @todo Call controllers with the request
+            
+            // Call post dispatch plugins
+            $this->_pluginBroker->postDispatch($request);
+        }
+    }
+
+    /**
+     * Dispatch a command reply from the server
+     *
+     * @param  string $command The command
+     * @param  string $line    The string from the server
+     * @param  array  $words   The string splitted into words
+     * @return void
+     */
+    protected function _dispatchCommand($command, $line, array $words)
+    {
+        switch ($command) {
+            case 'NICK':
+                if ($this->_nicknameInUse === true and
+                    preg_match('#:' . $this->_alternateNickname
+                               . '[^ ]+ NICK :'
+                               . $this->_nickname
+                               . '#',
+                               $line) === 1) {
+                    $this->getLogger()->log('Original nickname regained');
+                    
+                    $this->_nicknameInUse     = false;
+                    $this->_alternateNickname = null;
+                    $this->_currentNickname   = $this->_nickname;
+                }
+                break;
+                
+            case 'PONG':
+                $this->_lastPongTime = time();
+                break;
+
+            case 'KICK':
+                if ($words[3] === $this->_currentNickname) {
+                    $this->getLogger()->log('Kicked from ' . $words[2]);
+                    
+                    $this->_removeChannel($words[2]);
+                    
+                    $this->_pluginBroker->kickedFromChannel($words[2]);
+                } else {
+                    $channel = $this->_getChannel($words[2]);
+                    $channel->removeUser($words[3]);
+                }
+                break;
+                
+            case 'JOIN':
+                $channel = $this->_getChannel($words[2]);
+                $channel->addUser($words[3]);
+                break;
+                
+            case 'PART':
+                $channel = $this->_getChannel($words[2]);
+                $channel->removeUser($words[3]);
+                break;
+        }
+    }
+    
+    /**
+     * Dispatch a command reply from the server
+     *
+     * @param  integer $responseCode The response code
+     * @param  string  $line         The string from the server
+     * @param  array   $words        The string splitted into words
+     * @return void
+     */
+    protected function _dispatchCommandReply($responseCode, $line, array $words)
+    {
+        switch ($responseCode) {
+            // Connected to server
+            case '376':
+                $this->_serverName = substr($words[0], 1);
+                $this->getLogger()->log('Connected to server');
+
+                $this->_delayTime = time();
+                $this->_connected = true;
+
+                $this->_pluginBroker->postConnect();
+                break;
+            
+            // User list received
+            case '353':
+                $channel = $this->_getChannel($words[4], true);
+                
+                $users = array_slice($words, 5);
+                foreach ($users as $user) {
+                    if ($user[0] === '@' or $user[0] === '+') {
+                        $user = substr($user, 1);
+                    }
+                    
+                    $channel->addUser($user);
+                }
+                break;
+        }
+    }
+    
+    /**
+     * Dispatch an error reply from the server
+     *
+     * @param  integer $responseCode The response code
+     * @param  string  $line         The string from the server
+     * @param  array   $words        The string splitted into words
+     * @return void
+     */
+    protected function _dispatchErrorReply($responseCode, $line, array $words)
+    {
+        switch ($responseCode) {
+            case '433':
+                if ($this->_connected === true) {
+                    $this->getLogger()->log('Nickname is in use, keeping alternative');
+                } else {
+                    $this->getLogger()->log('Nickname is in use, trying alternative');
+                    
+                    $alternative = $this->_nickname
+                                 . '_'
+                                 . substr(md5('ALL YOUR BASE ARE BELONG TO US'), rand(0, 31), 1);
+                    
+                    $response = DASBiT_Controller_Response::getInstance();
+                    $response->sendRaw('NICK ' . $alternative);
+                    
+                    $this->_alternateNickname = $alternative;
+                    $this->_currentNickname   = $this->_nickname;
+                }
+                break;
+                
+            case '474':
+                $this->getLogger()->log('Cannot join channel ' . $words[2] . '(+b)');
+                break;
+        }
+    }
+    
+    /**
+     * Try to connect to the server
+     *
+     * @return void
+     */
+    protected function _connect()
+    {
+        $this->getLogger()->log('Connecting to server');
+        
+        $this->_pluginBroker->preConnect();
+        
+        while (true) {
+            $this->_disconnect();
+            $this->_socket = socket_create(AF_INET, SOCK_STREAM, 0);
+            
+            if ($this->_socket !== false) {
+                $connectResult = socket_connect($this->_socket, $this->_address, $this->_port);
+                
+                if ($connectResult !== false) {
+                    $nonBlockResult = socket_set_nonblock($this->_socket);    
+                }
+            }
+            
+            if ($this->_socket === false or $connectResult === false or $nonBlockResult === false) {
+                $this->getLogger()->log('Could not connect, retrying in one minute');
+                sleep(60);
+                continue;
+            } else {
+                DASBiT_Controller_Response::getInstance()->setSocket($this->_socket);
+                               
+                $this->_sendNickname();
+                $this->_sendUsername();
+                
+                $this->_currentNickname = $this->_nickname;
+                $this->_lastPongTime    = time();
+                break;
+            }
+        }
+    }
+    
+    /**
+     * Send the username to the server
+     */
+    protected function _sendUsername()
+    {
+        $this->getLogger()->log('Registering with server');
+        
+        $response = DASBiT_Controller_Response::getInstance();
+        $response->sendRaw('USER ' . $this->_username . ' 2 3 :DASBiT');
+    }
+    
+    /**
+     * Send nickname to change to
+     */
+    protected function _sendNickname()
+    {
+        $this->getLogger()->log('Sending nickname');
+        
+        $response = DASBiT_Controller_Response::getInstance();
+        $response->sendRaw('NICK ' . $this->_nickname);        
+    }
+    
+    /**
+     * Disconnect from the server, if connected
+     */
+    protected function _disconnect()
+    {
+        DASBiT_Controller_Response::getInstance()->setSocket(null);
+        
+        $this->_serverName = null;
+        $this->_connected  = false;
+        
+        @socket_close($this->socket);
+    }
+    
+    /**
+     * Parse a raw channel name
+     *
+     * @param  string  $rawName Raw name of the channel
+     * @param  boolean $reset   Wether to reset the channel or not
+     * @return DASBiT_Irc_Channel
+     */
+    protected function _getChannel($rawName, $reset = false)
+    {
+        $channelName = addcslashes(trim($rawName), "'");
+        if ($channelName[0] === ':') {
+            $channelName = substr($channelName, 1);
+        }
+        
+        if ($reset === true) {
+            $this->_removeChannel($rawName);
+        }
+        
+        if (isset($this->_channels[$channelName]) === false) {
+            $this->_channels[$channelName] = new DASBiT_Irc_Channel($channelName);
+        }
+        
+        return $this->_channels[$channelName];
+    }
+    
+    /**
+     * Remove a channel
+     *
+     * @param  string $rawName
+     * @return void
+     */
+    protected function _removeChannel($rawName)
+    {
+        $channelName = addcslashes(trim($rawName), "'");
+        if ($channelName[0] === ':') {
+            $channelName = substr($channelName, 1);
+        }
+        
+        if (isset($this->_channels[$channelName]) === true) {
+            unset($this->_channels[$channelName]);
+        }                
+    }
+    
+    /**
+     * Set the server to connect to
+     *
+     * @param  string $server
+     * @throws InvalidArgumentException    When server is not a string
+     * @throws DASBiT_Controller_Exception When server is not valid
+     * @throws DASBiT_Controller_Exception When hostname is not valid
+     * @return void
+     */
+    protected function _setServer($server)
+    {
+        if (is_string($server) === false) {
+            throw new InvalidArgumentException('Server must be a string'); 
+        }
+        
+        $split = explode(':', $server);
+        
+        if (count($split) === 2) {
+            $host = $split[0];
+            $this->_port = (int) $split[1];
+        } else if (count($split) === 1) {
+            $host = $server;
+            $this->_port = 6667;
+        } else {
+            require_once 'DASBiT/Controller/Exception.php';
+            throw new DASBiT_Controller_Exception('Server is not valid');
+        }
+        
+        $address = gethostbyname($host);
+        
+        if (ip2long($address) === false or ($address === gethostbyaddr($address) and
+           preg_match("#.*\.[a-zA-Z]{2,3}$#", $host) === 0) ) {
+           require_once 'DASBiT/Controller/Exception.php';
+           throw new DASBiT_Controller_Exception('Hostname is not valid');
+        }
+        
+        $this->_address = $address;
     }
     
     /**
