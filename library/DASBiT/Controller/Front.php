@@ -670,6 +670,7 @@ class DASBiT_Controller_Front
                     $response->sendRaw('NICK ' . $alternative);
                     
                     $this->_currentNickname = $alternative;
+                    $this->_nicknameInUse   = true;
                 }
                 break;
                 
