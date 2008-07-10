@@ -26,14 +26,14 @@
 require_once 'DASBiT/Controller/Action/Interface.php';
 
 /**
- * @see SvnModel
+ * @see ChannelsModel
  */
-require_once 'SvnModel.php';
+require_once 'ChannelsModel.php';
 
 /**
- * Controller for controlling svn watching
+ * Controller for controlling log watching
  */
-class SvnController implements DASBiT_Controller_Action_Interface
+class LogController implements DASBiT_Controller_Action_Interface
 {
     /**
      * Defined by DASBiT_Controller_Action_Interface
@@ -50,36 +50,24 @@ class SvnController implements DASBiT_Controller_Action_Interface
         }
         
         $words = explode(' ', $request->getMessage());
-        if (count($words) < 4) {
+        if (count($words) < 2) {
             $response->send('Not enough parameters', $request);
             return;
         }
 
-        list(, $mode, $channel, $url) = $words;
+        list(, $mode, $channel) = $words;
         
-        $link = (count($words) > 4) ? $words[4]: 'NULL';
-        
-        $svnModel = new SvnModel();
-        $db       = $svnModel->getAdapter();
-        
+        $channelsModel = new ChannelsModel();
+        $db            = $channelsModel->getAdapter();
         switch ($mode) {
             case 'add-watch':
-                $infoResult = shell_exec('svn info ' . $url);
-                if (preg_match('#Revision: ([0-9]+)#', $infoResult, $match) === 1) {
-                    $currentRev = (int) $match[1];
-                    
-                    $svnModel->insert(array('svn_channel'  => $channel,
-                                            'svn_url'      => $url,
-                                            'svn_link'     => $link,
-                                            'svn_last_rev' => ($currentRev - 1)));
-                } else {
-                    $response->send('Invalid SVN URL', $request);
-                }
+                $channelsModel->update(array('channel_log' => 1),
+                                       $db->quoteInto('channel_name = ?', $channel));
                 break;
                 
             case 'remove-watch':
-                $svnModel->delete(array($db->quoteInto('svn_channel = ?', $channel),
-                                        $db->quoteInto('svn_url = ?', $url)));
+                $channelsModel->update(array('channel_log' => 0),
+                                       $db->quoteInto('channel_name = ?', $channel));
                 break;
                 
             default:
@@ -95,6 +83,6 @@ class SvnController implements DASBiT_Controller_Action_Interface
      */
     public function getHelp()
     {
-        return '<add-watch|remove-watch> <channel> <url> [link (Revision = %R%)]';
+        return '<add-watch|remove-watch> <channel>';
     }
 }

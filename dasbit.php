@@ -62,6 +62,11 @@ require_once 'UsersPlugin.php';
 require_once 'SvnPlugin.php';
 
 /**
+ * @see LogPlugin
+ */
+require_once 'LogPlugin.php';
+
+/**
  * @see DASBiT_Controller_Front
  */
 require_once 'DASBiT/Controller/Front.php';
@@ -81,6 +86,7 @@ $front->setControllerDirectory(dirname(__FILE__) . '/application/controllers')
       ->registerPlugin(new AutoJoinPlugin())
       ->registerPlugin(new UsersPlugin())
       ->registerPlugin(new SvnPlugin())
+      ->registerPlugin(new LogPlugin())
       ->setNickname($config->nickname)
       ->setUsername($config->username)
       ->setCommandPrefix($config->prefix)
