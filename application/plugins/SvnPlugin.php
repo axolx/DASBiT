@@ -69,9 +69,10 @@ class SvnPlugin extends DASBiT_Controller_Plugin_Abstract
                             $message = '[SVN:r' . $log['revision'] . ':' . $log['username'] . '] ' . $log['content'];
                             
                             if ($repository->svn_link !== 'NULL') {
-                                $link = str_replace('%R%', $log['revision'], $repository->svn_link);
+                                $tinyUrl = file_get_contents('http://tinyurl.com/api-create.php?url='
+                                                             . str_replace('%R%', $log['revision'], $repository->svn_link));
                                 
-                                $message .= ' (See: ' . $link . ')';
+                                $message .= ' (See: ' . $tinyUrl . ')';
                             }
                             
                             $response->send($message, $repository->svn_channel);
