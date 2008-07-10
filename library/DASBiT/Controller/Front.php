@@ -231,28 +231,27 @@ class DASBiT_Controller_Front
         $dir = dir($controllerDirectory);
         while (($file = $dir->read()) !== false) {
             $controllerPath = $controllerDirectory . '/' . $file;
-            $split          = explode('.', $file);
-            $extension      = array_pop($split);
+            
+            if (preg_match('#^([A-Z][a-z]*)Controller\.php$#', $file, $match) === 1) {
+                $isController = true;
+            } else {
+                $isController = false;
+            }
             
             if ($file === '.' or $file === '..' or
                 is_dir($controllerPath) === true or
-                $extension !== 'php') {
+                $isController === false) {
                 continue; 
             }
-            
-            if (count($split) !== 1) {
-                require_once 'DASBiT/Controller/Exception.php';
-                throw new DASBiT_Controller_Exception('Controller name is invalid (' . $file . ')'); 
-            }
-           
+                      
             if (is_readable($controllerPath) === false) {
                 require_once 'DASBiT/Controller/Exception.php';
                 throw new DASBiT_Controller_Exception('Controller directory contains unreadable controller (' . $file . ')');                
             }
 
             // Directly require it, we may use it surely
-            $controllerName = strtolower($split[0]);
-            $className      = $split[0] . '_Controller';
+            $controllerName = strtolower($match[1]);
+            $className      = $match[1] . 'Controller';
             
             require_once $controllerPath;
             

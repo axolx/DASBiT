@@ -26,14 +26,14 @@
 require_once 'DASBiT/Controller/Action/Interface.php';
 
 /**
- * @see SvnModel
+ * @see ChannelsModel
  */
-require_once 'SvnModel.php';
+require_once 'ChannelsModel.php';
 
 /**
- * Controller for controlling svn watching
+ * Controller for parting channels
  */
-class Svn_Controller implements DASBiT_Controller_Action_Interface
+class JoinController implements DASBiT_Controller_Action_Interface
 {
     /**
      * Defined by DASBiT_Controller_Action_Interface
@@ -50,42 +50,19 @@ class Svn_Controller implements DASBiT_Controller_Action_Interface
         }
         
         $words = explode(' ', $request->getMessage());
-        if (count($words) < 4) {
+        if (count($words) < 2) {
             $response->send('Not enough parameters', $request);
             return;
         }
 
-        list(, $mode, $channel, $url) = $words;
+        list(, $channel) = $words;
         
-        $link = (count($words) > 4) ? $words[4]: 'NULL';
+        $response->sendRaw('JOIN ' . $channel);
         
-        $svnModel = new SvnModel();
-        $db       = $svnModel->getAdapter();
+        $channelsModel = new ChannelsModel();
+        $channelsModel->insert(array('channel_name' => $channel));
         
-        switch ($mode) {
-            case 'start-watch':
-                $infoResult = shell_exec('svn info ' . $url);
-                if (preg_match('#Revision: ([0-9]+)#', $infoResult, $match) === 1) {
-                    $currentRev = (int) $match[1];
-                    
-                    $svnModel->insert(array('svn_channel'  => $channel,
-                                            'svn_url'      => $url,
-                                            'svn_link'     => $link,
-                                            'svn_last_rev' => ($currentRev - 1)));
-                } else {
-                    $response->send('Invalid SVN URL', $request);
-                }
-                break;
-                
-            case 'stop-watch':
-                $svnModel->delete(array($db->quoteInto('svn_channel = ?', $channel),
-                                        $db->quoteInto('svn_url = ?', $url)));
-                break;
-                
-            default:
-                $response->send('Unknown mode', $request);
-                break;
-        }
+        DASBiT_Controller_Front::getInstance()->getLogger()->log('Joined ' . $channel);
     }
 
     /**
@@ -95,6 +72,6 @@ class Svn_Controller implements DASBiT_Controller_Action_Interface
      */
     public function getHelp()
     {
-        return '<start-watch|stop-watch> <channel> <url>';
+        return '<channel>';
     }
 }

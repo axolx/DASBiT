@@ -26,9 +26,9 @@
 require_once 'DASBiT/Controller/Action/Interface.php';
 
 /**
- * Controller for looking up documentation
+ * Controller for joining channels
  */
-class Manual_Controller implements DASBiT_Controller_Action_Interface
+class PartController implements DASBiT_Controller_Action_Interface
 {
     /**
      * Defined by DASBiT_Controller_Action_Interface
@@ -39,34 +39,27 @@ class Manual_Controller implements DASBiT_Controller_Action_Interface
      */
     public function dispatch(DASBiT_Controller_Request $request, DASBIT_Controller_Response $response)
     {
-        $message = $request->getMessage();
-        $params  = array_slice(explode(' ', $message), 1);
-        
-        $lastParams = array_slice($params, -2);
-        if ($lastParams[0] === '@') {
-            $prefix      = $lastParams[1] . ', see: ';
-            $searchTerms = trim(implode(' ', array_slice($params, 0, -2)));    
-        } else {
-            $prefix      = '';
-            $searchTerms = trim(implode(' ', $params));
+        if (UsersPlugin::isIdentified($request) === false) {
+            $response->send('You are not identified', $request);
+            return;            
         }
         
-        $searchTerms = preg_replace('#[*]#', '', $searchTerms);
-
-        if (empty($searchTerms) === false) {
-            $result = file_get_contents('http://framework.zend.com/manual/'
-                                        . 'search?query='
-                                        . urlencode($searchTerms)
-                                        . '&language=en&search=Search+Manual%21');
-        } else {
-            $result = '';
+        $words = explode(' ', $request->getMessage());
+        if (count($words) < 2) {
+            $response->send('Not enough parameters', $request);
+            return;
         }
 
-        if (preg_match('#<li><a href="(/manual/en/.*?)">(.*?)  \\[en\\]</a></li>#', $result, $matches) === 1) {
-            $response->send($prefix . trim($matches[2]) . ': http://framework.zend.com' . trim($matches[1]), $request);
-        } else {
-            $response->send('Nothing found for "' . $searchTerms . '"', $request);
-        }
+        list(, $channel) = $words;
+        
+        $response->sendRaw('PART ' . $channel);
+        
+        $channelsModel = new ChannelsModel();
+        $channelsModel->delete($channelsModel->getAdapter()
+                                             ->quoteInto('channel_name = ?',
+                                                         $channel));
+                                                         
+        DASBiT_Controller_Front::getInstance()->getLogger()->log('Parted ' . $channel);
     }
 
     /**
@@ -76,6 +69,6 @@ class Manual_Controller implements DASBiT_Controller_Action_Interface
      */
     public function getHelp()
     {
-        return '<search terms>';
+        return '<channel>';
     }
 }

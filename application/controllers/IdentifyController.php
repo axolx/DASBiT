@@ -28,7 +28,7 @@ require_once 'DASBiT/Controller/Action/Interface.php';
 /**
  * Controller for identifying users
  */
-class Identify_Controller implements DASBiT_Controller_Action_Interface
+class IdentifyController implements DASBiT_Controller_Action_Interface
 {
     /**
      * Defined by DASBiT_Controller_Action_Interface
