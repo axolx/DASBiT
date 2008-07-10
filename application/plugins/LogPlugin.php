@@ -84,7 +84,7 @@ class LogPlugin extends DASBiT_Controller_Plugin_Abstract
 
                 $this->_logAdapter->query('CREATE TABLE IF NOT EXISTS logs (
                                                log_id INTEGER PRIMARY KEY,
-                                               channel_id INTEGER,
+                                               log_channel TEXT,
                                                log_timestamp INTEGER,
                                                log_nickname TEXT,
                                                log_message TEXT
@@ -94,7 +94,7 @@ class LogPlugin extends DASBiT_Controller_Plugin_Abstract
             }
             
             $logsModel = new LogsModel(array('db' => $this->_logAdapter));
-            $logsModel->insert(array('channel_id'    => $channel->channel_id,
+            $logsModel->insert(array('log_channel'   => $request->getSource(),
                                      'log_timestamp' => $now,
                                      'log_nickname'  => $request->getNickname(),
                                      'log_message'   => $request->getMessage()));
