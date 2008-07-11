@@ -38,6 +38,6 @@ class NickServPlugin extends DASBiT_Controller_Plugin_Abstract
     public function postConnect()
     {
         $response = DASBiT_Controller_Response::getInstance();
-        $response->send('identify zendbot zendbot', 'nickserv');
+        $response->send('identify zfbot', 'nickserv');
     }
 }
