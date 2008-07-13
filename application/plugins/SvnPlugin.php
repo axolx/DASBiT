@@ -31,7 +31,7 @@ require_once 'DASBiT/Controller/Plugin/Abstract.php';
 require_once 'SvnModel.php';
 
 /**
- * Plugin for managing the users which can identify with DASBiT
+ * Plugin for watching svn
  */
 class SvnPlugin extends DASBiT_Controller_Plugin_Abstract
 {   
