@@ -62,6 +62,11 @@ require_once 'UsersPlugin.php';
 require_once 'SvnPlugin.php';
 
 /**
+ * @see JiraPlugin
+ */
+require_once 'JiraPlugin.php';
+
+/**
  * @see LogPlugin
  */
 require_once 'LogPlugin.php';
@@ -86,6 +91,7 @@ $front->setControllerDirectory(dirname(__FILE__) . '/application/controllers')
       ->registerPlugin(new AutoJoinPlugin())
       ->registerPlugin(new UsersPlugin())
       ->registerPlugin(new SvnPlugin())
+      ->registerPlugin(new JiraPlugin())
       ->registerPlugin(new LogPlugin())
       ->setNickname($config->nickname)
       ->setUsername($config->username)
