@@ -59,7 +59,7 @@ class JiraController implements DASBiT_Controller_Action_Interface
         
         $jiraUrl = rtrim($jiraUrl, '/');
         
-        $jiraModel = new SvnModel();
+        $jiraModel = new JiraModel();
         $db        = $jiraModel->getAdapter();
         
         switch ($mode) {           
