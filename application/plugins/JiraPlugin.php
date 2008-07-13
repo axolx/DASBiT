@@ -74,8 +74,15 @@ class JiraPlugin extends DASBiT_Controller_Plugin_Abstract
                 }
 
                 $currentLastIssue = null;
-                foreach ($issues->item as $issue) {
-                    $key = (string) $key;
+
+                if (is_array($issues->channel->item) === true) {
+                    $issues = $issues->channel->item;
+                } else {
+                    $issues = array($issues->channel->item);
+                }
+                
+                foreach ($issues as $issue) {
+                    $key = (string) $issue->key;
 
                     if ($currentLastIssue === null) {
                         $currentLastIssue = $key;
@@ -91,10 +98,10 @@ class JiraPlugin extends DASBiT_Controller_Plugin_Abstract
                     $component = (string) $issue->component;
                     
                     $tinyUrl = file_get_contents('http://tinyurl.com/api-create.php?url='
-                                                             . $jira->jira_url . '/browse/ ' . $key);
+                                                             . $jira->jira_url . '/browse/' . $key);
                     
                     $message = '[Jira:' . $key . '] '
-                             . '[Type:' . $type . ']'
+                             . '[Type:' . $type . '] '
                              . '[Status:' . $status . '] '
                              . '[Component:' . $component . '] '
                              . $summary

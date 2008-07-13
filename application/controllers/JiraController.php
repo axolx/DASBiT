@@ -67,7 +67,6 @@ class JiraController implements DASBiT_Controller_Action_Interface
                 $url = $jiraUrl
                      . '/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml'
                      . '?&pid=10000'
-                     . '&updated%3Aprevious=-1d'
                      . '&sorter/field=issuekey'
                      . '&sorter/order=DESC'
                      . '&sorter/field=updated'
@@ -79,11 +78,11 @@ class JiraController implements DASBiT_Controller_Action_Interface
                     $response->send('Invalid Jira URL', $request);
                 }
                 
-                $key = (string) $issues->item[0]->key;
+                $key = (string) $issues->channel->item->key;
                 
                 $jiraModel->insert(array('jira_channel'    => $channel,
                                          'jira_url'        => $jiraUrl,
-                                         'jira_last_issue' => ($key - 1)));
+                                         'jira_last_issue' => $key));
                 break;
                 
             case 'remove-watch':
