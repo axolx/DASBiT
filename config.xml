@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <common>
+        <nickname>Test_Bot</nickname>
+        <username>test_bot@dasprids.de</username>
+        <prefix>!</prefix>
+    </common>
+    <server>
+        <hostname>irc.freenode.net</hostname>
+        <port>8000</port>
+    </server>
+</config>
