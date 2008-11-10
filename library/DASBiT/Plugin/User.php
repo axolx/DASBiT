@@ -19,19 +19,29 @@
  * @version $Id$
  */
 
-// Set the include path
-$includePath = dirname(__FILE__) . '/library'
-             . PATH_SEPARATOR
-             . get_include_path();
-
-set_include_path($includePath);
-
-// Register the autoloader
-require_once 'Zend/Loader.php';
-Zend_Loader::registerAutoload();
-               
-// Get the config
-$config = new Zend_Config_Xml(dirname(__FILE__) . '/config.xml');
-
-// Create the IRC controller
-$controller = new DASBiT_Irc_Controller($config, dirname(__FILE__) . '/plugins');
+/**
+ * Plugin to handle user authentication
+ */
+class DASBiT_Plugin_User implements DASBiT_Plugin
+{
+    /**
+     * Defined by DASBiT_Plugin
+     *
+     * @param DASBiT_Irc_Controller $controller
+     */
+    public function __construct(DASBiT_Irc_Controller $controller)
+    {
+        $controller->registerCommand($this, 'login', 'login');
+    }
+    
+    /**
+     * Authenticate a user
+     *
+     * @param DASBiT_Irc_Request  $request
+     * @param DASBiT_Irc_Response $response
+     */
+    public function login(DASBiT_Irc_Request $request, DASBiT_Irc_Response $response)
+    {
+        
+    }
+}

@@ -39,11 +39,26 @@ class DASBiT_Irc_Controller
     protected $_client;
     
     /**
+     * List of registered plugins
+     *
+     * @var array
+     */
+    protected $_plugins = array();
+    
+    /**
+     * List of registered commands
+     *
+     * @var array
+     */
+    protected $_commands = array();
+    
+    /**
      * Create a new controller instance
      *
      * @param Zend_Config $config
+     * @param string      $pluginsPath
      */
-    public function __construct(Zend_Config $config)
+    public function __construct(Zend_Config $config, $pluginsPath = null)
     {
         // Set configuration
         $this->_config = $config;
@@ -52,5 +67,49 @@ class DASBiT_Irc_Controller
         $this->_client = new DASBiT_Irc_Client($this,
                                                $this->_config->server->hostname,
                                                $this->_config->server->port);
+                                               
+        // Find and register plugins
+        if ($pluginsPath !== null) {
+            if (!is_dir($pluginsPath)) {
+                throw new DASBiT_Irc_Exception('Plugins path is no directory');
+            }
+            
+            $dir = dir($pluginsPath);
+            while (($fileName = $dir->read()) !== false) {
+                if (preg_match('#^([A-Za-z0-9]+)\.php$#', $fileName, $match) === 0) {
+                    continue;
+                }
+                
+                // Load the plugin
+                include $pluginsPath . '/' . $fileName;
+                
+                $pluginName = $match[1];
+                $className  = $pluginName . 'Plugin';
+                
+                if (!class_exists($className, false)) {
+                    throw new DASBiT_Irc_Exception('No class with name "' . $className . '" found');
+                }
+
+                $plugin = new $className($this);
+                
+                if (!$plugin instanceof DASBiT_Plugin) {
+                    throw new DASBiT_Irc_Exception('Plugin "' . $pluginName . '" does not implement from DASBiT_Plugin');
+                }
+                
+                $this->plugins[$pluginName] = $plugin;
+            }
+        }
+    }
+    
+    /**
+     * Register a new command to the controller
+     *
+     * @param DASBiT_Plugin $plugin
+     * @param string        $method
+     * @param string        $command
+     */
+    public function registerCommand(DASBiT_Plugin $plugin, $method, $command)
+    {
+        $this->commands[$command] = array($plugin, $method);
     }
 }

@@ -19,40 +19,15 @@
  * @version $Id$
  */
 
-class DASBiT_Irc_Client
+/**
+ * Plugin interface
+ */
+interface DASBiT_Plugin
 {
     /**
-     * Address of the server
+     * Register all commands and hooks to the controller
      *
-     * @var string
+     * @param DASBiT_Irc_Controller $controller
      */
-    protected $_address;
-    
-    /**
-     * Port of the server
-     *
-     * @var integer
-     */
-    protected $_port;
-    
-    /**
-     * Create a new client connection to a server
-     *
-     * @param string  $hostname
-     * @param integer $port
-     */
-    public function __construct($hostname, $port = 6777)
-    {
-        $address = gethostbyname($hostname);
-        
-        if (ip2long($address) === false || ($address === gethostbyaddr($address)
-            && preg_match("#.*\.[a-zA-Z]{2,3}$#", $host) === 0) )
-        {
-           throw new DASBiT_Irc_Exception('Hostname is not valid');
-        }
-        
-        $this->_address = $address;
-    }
-    
-    
+    public function __construct(DASBiT_Irc_Controller $controller);
 }
