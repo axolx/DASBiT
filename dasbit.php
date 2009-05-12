@@ -19,6 +19,9 @@
  * @version $Id$
  */
 
+// Enable full error reporting
+error_reporting(E_ALL | E_STRICT);
+
 // Set the include path
 $includePath = dirname(__FILE__) . '/library'
              . PATH_SEPARATOR
@@ -27,11 +30,13 @@ $includePath = dirname(__FILE__) . '/library'
 set_include_path($includePath);
 
 // Register the autoloader
-require_once 'Zend/Loader.php';
-Zend_Loader::registerAutoload();
+require_once 'Zend/Loader/Autoloader.php';
+$autoLoader = Zend_Loader_Autoloader::getInstance();
+$autoLoader->registerNamespace('Plugin')
+           ->registerNamespace('DASBiT');
                
 // Get the config
 $config = new Zend_Config_Xml(dirname(__FILE__) . '/config.xml');
 
 // Create the IRC controller
-$controller = new DASBiT_Irc_Controller($config, dirname(__FILE__) . '/plugins');
+$controller = new DASBiT_Irc_Controller($config, dirname(__FILE__) . '/Plugin');

@@ -84,7 +84,7 @@ class DASBiT_Irc_Controller
                 include $pluginsPath . '/' . $fileName;
                 
                 $pluginName = $match[1];
-                $className  = $pluginName . 'Plugin';
+                $className  = 'Plugin_' . $pluginName;
                 
                 if (!class_exists($className, false)) {
                     throw new DASBiT_Irc_Exception('No class with name "' . $className . '" found');

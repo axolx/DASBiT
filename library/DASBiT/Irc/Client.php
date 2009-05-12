@@ -151,7 +151,12 @@ class DASBiT_Irc_Client
         
         $requests = array();
         
-        $select = socket_select($read = array($this->_socket), $write, $except = null, 1);
+        $read   = array($this->_socket);
+        $write  = array();
+        $except = null;
+        $select = socket_select($read, $write, $except, 1);
+        $buffer = '';
+        
         if ($select !== 0) {
             if ($select !== false) {
                 $data = socket_read($this->_socket, 10240);
