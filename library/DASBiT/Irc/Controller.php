@@ -99,6 +99,39 @@ class DASBiT_Irc_Controller
                 $this->plugins[$pluginName] = $plugin;
             }
         }
+        
+        $this->_mainLoop();
+    }
+       
+    /**
+     * Get the configuration
+     *
+     * @return Zend_Config
+     */
+    public function getConfig()
+    {
+        return $this->_config;
+    }
+    
+    /**
+     * Get the client
+     *
+     * @return DASBiT_Irc_Client
+     */
+    public function getClient()
+    {
+        return $this->_client;
+    }
+    
+    /**
+     * Log a message
+     *
+     * @param  string $message
+     * @return void
+     */
+    public function log($message)
+    {
+        echo $message . "\n";
     }
     
     /**
@@ -110,6 +143,31 @@ class DASBiT_Irc_Controller
      */
     public function registerCommand(DASBiT_Plugin $plugin, $method, $command)
     {
-        $this->commands[$command] = array($plugin, $method);
+        $this->_commands[$command] = array($plugin, $method);
+    }
+    
+    /**
+     * Main bot loop, will run forever
+     *
+     * @return void
+     */
+    protected function _mainLoop()
+    {
+        while (true) {
+            $requests = $this->_client->getRequests();
+            
+            foreach ($requests as $request) {
+                $words   = $request->getWords();
+                $command = $words[0];
+                
+                if ($command[0] === $this->_config->common->prefix) {
+                    $command = substr($command, 1);
+
+                    if (isset($this->_commands[$command])) {
+                        call_user_func($this->_commands[$command], $request);
+                    }
+                }
+            }
+        }
     }
 }

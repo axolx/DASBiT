@@ -38,9 +38,8 @@ class DASBiT_Plugin_User implements DASBiT_Plugin
      * Authenticate a user
      *
      * @param DASBiT_Irc_Request  $request
-     * @param DASBiT_Irc_Response $response
      */
-    public function login(DASBiT_Irc_Request $request, DASBiT_Irc_Response $response)
+    public function login(DASBiT_Irc_Request $request)
     {
         
     }

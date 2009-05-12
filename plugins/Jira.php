@@ -22,15 +22,26 @@
 /**
  * Plugin to handle JIRA issues
  */
-class JiraPlugin implements DASBiT_Plugin
+class JiraPlugin extends DASBiT_Plugin
 {
     /**
      * Defined by DASBiT_Plugin
      *
-     * @param DASBiT_Irc_Controller $controller
+     * @return void
      */
-    public function __construct(DASBiT_Irc_Controller $controller)
+    protected function _init()
     {
-        $controller->registerCommand($this, 'lookupIssue', 'issue');
+        $this->_controller->registerCommand($this, 'lookupIssue', 'issue');
+    }
+    
+    /**
+     * Lookup a Jira issue
+     *
+     * @param  DASBiT_Irc_Request $request
+     * @return void
+     */
+    public function lookupIssue(DASBiT_Irc_Request $request)
+    {
+        $this->_client->send('foobar', $request);
     }
 }

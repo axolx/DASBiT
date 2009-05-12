@@ -20,14 +20,41 @@
  */
 
 /**
- * Plugin interface
+ * Abstract plugin class
  */
-interface DASBiT_Plugin
+abstract class DASBiT_Plugin
 {
     /**
-     * Register all commands and hooks to the controller
+     * Parent controller
+     *
+     * @var DASBiT_Irc_Controller
+     */
+    protected $_controller;
+    
+    /**
+     * Client used to send messages
+     *
+     * @var DASBiT_Irc_Client
+     */
+    protected $_client;
+    
+    /**
+     * Assign the controller and it's client locally
      *
      * @param DASBiT_Irc_Controller $controller
      */
-    public function __construct(DASBiT_Irc_Controller $controller);
+    public function __construct(DASBiT_Irc_Controller $controller)
+    {
+        $this->_controller = $controller;
+        $this->_client     = $controller->getClient();
+        
+        $this->_init();
+    }
+    
+    /**
+     * Initiate the plugin
+     *
+     * @return void
+     */
+    abstract protected function _init();
 }

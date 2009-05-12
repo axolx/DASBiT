@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <common>
-        <nickname>Test_Bot</nickname>
-        <username>test_bot@dasprids.de</username>
+        <nickname>DBV5</nickname>
+        <username>DBV5@dasprids.de</username>
         <prefix>!</prefix>
     </common>
     <server>
