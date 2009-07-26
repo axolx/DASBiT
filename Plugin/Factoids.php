@@ -139,17 +139,17 @@ class Plugin_Factoids extends DASBiT_Plugin
     {
         $words = array_slice($request->getWords(), 1);
         
-        if (count($words) === 0) {
+        if (count($words) < 2) {
             $this->_client->send('Too less arguments', $request, DASBiT_Irc_Client::TYPE_NOTICE);
             return;
         }
         
-        if ($words[0] === 'about') {
-            $nickname    = null;
-            $factoidName = implode(' ', array_slice($words, 1));
-        } elseif ($words[1] === 'about') {
+        if ($words[1] === 'about') {
             $nickname    = $words[0];
-            $factoidName = implode(' ', array_slice($words, 2));            
+            $factoidName = implode(' ', array_slice($words, 2));
+        } elseif ($words[0] === 'about') {
+            $nickname    = null;
+            $factoidName = implode(' ', array_slice($words, 1));            
         } else {
             $this->_client->send('Wrong syntax, use "tell (nickname) about factoid"', $request, DASBiT_Irc_Client::TYPE_NOTICE);
             return;            
