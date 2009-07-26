@@ -53,6 +53,20 @@ class DASBiT_Irc_Controller
     protected $_commands = array();
     
     /**
+     * List of registered hooks
+     *
+     * @var array
+     */
+    protected $_hooks = array();
+    
+    /**
+     * Intervalled triggers
+     *
+     * @var array
+     */
+    protected $_intervals = array();
+    
+    /**
      * Create a new controller instance
      *
      * @param Zend_Config $config
@@ -147,6 +161,51 @@ class DASBiT_Irc_Controller
     }
     
     /**
+     * Register a new hook to the controller
+     *
+     * @param DASBiT_Plugin $plugin
+     * @param string        $method
+     * @param string        $hook
+     */
+    public function registerHook(DASBiT_Plugin $plugin, $method, $hook)
+    {
+        if (!isset($this->_hooks[$hook])) {
+            $this->_hooks[$hook] = array();
+        }
+        
+        $this->_hooks[$hook][] = array($plugin, $method);
+    }
+    
+    /**
+     * Register a new interval
+     *
+     * @param DASBiT_Plugin $plugin
+     * @param string        $method
+     * @param string        $seconds
+     */
+    public function registerInterval(DASBiT_Plugin $plugin, $method, $seconds)
+    {
+        $this->_intervals[] = array('duration'   => $seconds,
+                                    'nextUpdate' => time(),
+                                    'target'     => array($plugin, $method));
+    }
+    
+    /**
+     * Execute all plugin hooks
+     *
+     * @param  string $hook
+     * @return void
+     */
+    public function hook($hook)
+    {
+        if (isset($this->_hooks[$hook])) {
+            foreach ($this->_hooks[$hook] as $method) {
+                call_user_func($method);
+            }
+        }
+    }
+    
+    /**
      * Main bot loop, will run forever
      *
      * @return void
@@ -157,15 +216,25 @@ class DASBiT_Irc_Controller
             $requests = $this->_client->getRequests();
             
             foreach ($requests as $request) {
-                $words   = $request->getWords();
-                $command = $words[0];
+                $message = $request->getMessage();
                 
-                if ($command[0] === $this->_config->common->prefix) {
-                    $command = substr($command, 1);
+                if ($message[0] === $this->_config->common->prefix) {
+                    $commandMessage = substr($message, 1);
 
-                    if (isset($this->_commands[$command])) {
-                        call_user_func($this->_commands[$command], $request);
+                    foreach ($this->_commands as $command => $method) {
+                        if (preg_match('#^' . preg_quote($command, '#') . ' #', $commandMessage)) {
+                            call_user_func($method, $request);
+                            break;
+                        }
                     }
+                }
+            }
+            
+            $now = time();
+            foreach ($this->_intervals as &$interval) {
+                if ($interval['nextUpdate'] <= $now) {
+                    $interval['nextUpdate'] = ($now + $interval['duration']);
+                    call_user_func($interval['target']);
                 }
             }
         }

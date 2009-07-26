@@ -222,7 +222,11 @@ class DASBiT_Irc_Client
     public function send($message, $target, $type = self::TYPE_MESSAGE)
     {
         if ($target instanceof DASBiT_Irc_Request) {
-            $target = $target->getSource();
+            if ($type === self::TYPE_NOTICE) {
+                $target = $target->getNickname();
+            } else {
+                $target = $target->getSource();
+            }
         }
         
         switch ($type) {
@@ -331,7 +335,7 @@ class DASBiT_Irc_Client
                                $line) === 1) {
                     $this->_controller->log('Original nickname regained');
                     
-                    $this->_currentNickname   = $this->_nickname;
+                    $this->_currentNickname = $this->_nickname;
                 }
                 break;
                 
@@ -341,23 +345,20 @@ class DASBiT_Irc_Client
 
             case 'KICK':
                 if ($words[3] === $this->_currentNickname) {
+                    // Self kicked from channel
                     $this->_controller->log('Kicked from ' . $words[2]);
-                    
-                    //$this->_removeChannel($words[2]);
+                    $this->_controller->hook('kicked');
                 } else {
-                    $channel = $this->_getChannel($words[2]);
-                    $channel->removeUser($words[3]);
+                    // User kicked from channel
                 }
                 break;
                 
             case 'JOIN':
-                $channel = $this->_getChannel($words[2]);
-                $channel->addUser($words[3]);
+                // Someone joined a channel
                 break;
                 
             case 'PART':
-                $channel = $this->_getChannel($words[2]);
-                $channel->removeUser($words[3]);
+                // Someone parted a channel
                 break;
         }
     }
@@ -379,20 +380,12 @@ class DASBiT_Irc_Client
                 $this->_controller->log('Connected to server');
 
                 $this->_delayTime = time();
+                
+                $this->_controller->hook('connected');
                 break;
             
             // User list received
             case '353':
-                $channel = $this->_getChannel($words[4], true);
-                
-                $users = array_slice($words, 5);
-                foreach ($users as $user) {
-                    if ($user[0] === '@' or $user[0] === '+') {
-                        $user = substr($user, 1);
-                    }
-                    
-                    $channel->addUser($user);
-                }
                 break;
         }
     }

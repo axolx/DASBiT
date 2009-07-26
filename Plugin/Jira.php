@@ -32,6 +32,7 @@ class Plugin_Jira extends DASBiT_Plugin
     protected function _init()
     {
         $this->_controller->registerCommand($this, 'lookupIssue', 'issue');
+        $this->_controller->registerInterval($this, 'watchUpdates', 120);
     }
     
     /**
@@ -62,7 +63,31 @@ class Plugin_Jira extends DASBiT_Plugin
         
         $xml  = simplexml_load_string($response->getBody());
         $item = $xml->channel->item;
-        
+                
+        $this->_reportIssue('Issue', $item, $request);
+    }
+
+    /**
+     * Watch for updates
+     *
+     * @return void
+     */
+    public function watchUpdates()
+    {
+        //$this->_reportIssue('Issue-Update', $item, $request);
+    }
+    
+    /**
+     * Report an issue
+     *
+     * @param  string             $name
+     * @param  SimpleXMLElement   $item
+     * @param  DASBiT_Irc_Request $request
+     * @return void
+     */
+    protected function _reportIssue($name, SimpleXMLElement $item, DASBiT_Irc_Request $request)
+    {
+        $issueId   = (string) $item->key;
         $link      = (string) $item->link;
         $summary   = (string) $item->summary;
         $type      = (string) $item->type;
@@ -73,17 +98,27 @@ class Plugin_Jira extends DASBiT_Plugin
             $component = 'n/a';
         }
         
-        $client->setUri(sprintf('http://tinyurl.com/api-create.php?url=http://framework.zend.com/issues/browse/%s', $issueId));
+        $url = 'http://framework.zend.com/issues/browse/' . $issueId;
+        
+        $client = new Zend_Http_Client('http://tinyurl.com/api-create.php?url=' . $url);
+        $response = $client->request();
+        
+        if ($response->isSuccessful()) {
+            $url = $response->getBody();   
+        }
+            
+        $client  = new Zend_Http_Client(sprintf('http://tinyurl.com/api-create.php?url=http://framework.zend.com/issues/browse/%s', $issueId));
         $tinyUrl = $client->request()->getBody();
         
-        $response = sprintf('[Issue:%s] [Type:%s] [Status:%s] [Component:%s] %s (See: %s)',
+        $response = sprintf('[%s:%s] [Type:%s] [Status:%s] [Component:%s] %s (See: %s)',
+                            $name,
                             $issueId,
                             $type,
                             $status,
                             $component,
                             $summary,
-                            $tinyUrl);
+                            $url);
                             
-        $this->_client->send($response, $request);
+        $this->_client->send($response, $request);        
     }
 }

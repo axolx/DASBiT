@@ -22,6 +22,9 @@
 // Enable full error reporting
 error_reporting(E_ALL | E_STRICT);
 
+// Define data path
+define('DATA_PATH', dirname(__FILE__) . '/data');
+
 // Set the include path
 $includePath = dirname(__FILE__) . '/library'
              . PATH_SEPARATOR
@@ -34,7 +37,7 @@ require_once 'Zend/Loader/Autoloader.php';
 $autoLoader = Zend_Loader_Autoloader::getInstance();
 $autoLoader->registerNamespace('Plugin')
            ->registerNamespace('DASBiT');
-               
+
 // Get the config
 $config = new Zend_Config_Xml(dirname(__FILE__) . '/config.xml');
 
