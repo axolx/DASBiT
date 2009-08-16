@@ -21,9 +21,18 @@
 
 /**
  * Plugin to handle JIRA issues
+ * 
+ * Currently this plugin is specific for ZF Jira
  */
 class Plugin_Jira extends DASBiT_Plugin
 {
+    /**
+     * Database adapter
+     *
+     * @var Zend_Db_Adapter_Pdo_Sqlite
+     */
+    protected $_adapter;
+    
     /**
      * Defined by DASBiT_Plugin
      *
@@ -31,6 +40,27 @@ class Plugin_Jira extends DASBiT_Plugin
      */
     protected function _init()
     {
+        $this->_adapter = DASBiT_Database::accessDatabase('jira', array(
+            'trackers' => array(
+                'tracker_id'         => 'INTEGER PRIMARY KEY',
+                'tracker_last_issue' => 'VARCHAR(16)',
+            )
+        ));
+        
+        $select = $this->_adapter
+                       ->select()
+                       ->from('trackers',
+                              array('tracker_id',
+                                    'tracker_last_issue'));
+                              
+        $tracker = $this->_adapter->fetchRow($select);
+        
+        if ($tracker === false) {
+            $this->_adapter->insert('trackers',
+                                    array('tracker_id'         => 1,
+                                          'tracker_last_issue' => ''));
+        }
+        
         $this->_controller->registerCommand($this, 'lookupIssue', 'issue');
         $this->_controller->registerInterval($this, 'watchUpdates', 120);
     }
@@ -51,6 +81,11 @@ class Plugin_Jira extends DASBiT_Plugin
         }
         
         $issueId = $words[1];
+        
+        if (is_numeric($issueId)) {
+            $issueId = 'ZF-' . $issueId;
+        }
+        
         $uri     = sprintf('http://framework.zend.com/issues/si/jira.issueviews:issue-xml/%1$s/%1$s.xml', urlencode($issueId));
         
         $client   = new Zend_Http_Client($uri);
@@ -74,7 +109,90 @@ class Plugin_Jira extends DASBiT_Plugin
      */
     public function watchUpdates()
     {
-        //$this->_reportIssue('Issue-Update', $item, $request);
+        $select = $this->_adapter
+                       ->select()
+                       ->from('trackers',
+                              array('tracker_id',
+                                    'tracker_last_issue'));
+                              
+        $tracker = $this->_adapter->fetchRow($select);
+        
+        if ($tracker['tracker_last_issue'] === '') {
+            $issues = $this->_getLatestIssues(1);
+            
+            if (!$issues && isset($issues->channel->item->key)) {
+                $lastIssue = (string) $issues->channel->item->key;
+            } else {
+                $lastIssue = '';
+            }
+            
+            $this->_adapter->update('trackers',
+                                    array('tracker_last_issue' => $lastIssue),
+                                    'tracker_id = 1');
+                                    
+            return;
+        }
+        
+        $issues = $this->_getLatestIssues(100);
+        
+        if (!$issues) {
+            return;
+        }
+
+        $lastIssue        = $tracker['tracker_last_issue'];
+        $currentLastIssue = null;
+
+        if (is_array($issues->channel->item) === true) {
+            $issues = $issues->channel->item;
+        } else {
+            $issues = array($issues->channel->item);
+        }
+        
+        foreach ($issues as $issue) {
+            $key = (string) $issue->key;
+            
+            if ($currentLastIssue === null) {
+                $currentLastIssue = $key;
+            }
+            
+            if ($key === $lastIssue) {
+                break;
+            }
+            
+            $this->_reportIssue('Issue-Update', $issue, null);
+        }
+        
+        $this->_adapter->update('trackers',
+                                array('tracker_last_issue' => $currentLastIssue),
+                                'tracker_id = 1');
+    }
+    
+    /**
+     * Get latest issues
+     * 
+     * @param  integer $num
+     * @return SimpleXMLElement
+     */
+    protected function _getLatestIssues($num)
+    {
+        $uri = 'http://framework.zend.com/issues/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml'
+             . '/sr/jira.issueviews:searchrequest-xml/temp/SearchRequest.xml'
+             . '?&pid=10000'
+             . '&updated%3Aprevious=-1d'
+             . '&sorter/field=issuekey'
+             . '&sorter/order=DESC'
+             . '&sorter/field=updated'
+             . '&sorter/order=DESC'
+             . '&tempMax=' . $num;
+        
+        $client   = new Zend_Http_Client($uri);
+        $response = $client->request();
+        
+        if (!$response->isSuccessful()) {
+            return null;
+        }
+        
+        return simplexml_load_string($response->getBody());
     }
     
     /**
@@ -85,7 +203,7 @@ class Plugin_Jira extends DASBiT_Plugin
      * @param  DASBiT_Irc_Request $request
      * @return void
      */
-    protected function _reportIssue($name, SimpleXMLElement $item, DASBiT_Irc_Request $request)
+    protected function _reportIssue($name, SimpleXMLElement $item, DASBiT_Irc_Request $request = null)
     {
         $issueId   = (string) $item->key;
         $link      = (string) $item->link;
@@ -118,7 +236,11 @@ class Plugin_Jira extends DASBiT_Plugin
                             $component,
                             $summary,
                             $url);
-                            
-        $this->_client->send($response, $request);        
+
+        if ($request !== null) {
+            $this->_client->send($response, $request);
+        } else {
+            $this->_client->send($response, '#zftalk.dev');
+        }        
     }
 }
