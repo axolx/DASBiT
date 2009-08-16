@@ -200,7 +200,11 @@ class DASBiT_Irc_Controller
     {
         if (isset($this->_hooks[$hook])) {
             foreach ($this->_hooks[$hook] as $method) {
-                call_user_func($method);
+                try {
+                    call_user_func($method);
+                } catch (Exception $e) {
+                    echo 'Catched exception: ' . $e->getMessage() . PHP_EOL;
+                }
             }
         }
     }
@@ -223,7 +227,11 @@ class DASBiT_Irc_Controller
 
                     foreach ($this->_commands as $command => $method) {
                         if (preg_match('#^' . preg_quote($command, '#') . ' #', $commandMessage)) {
-                            call_user_func($method, $request);
+                            try {
+                                call_user_func($method, $request);
+                            } catch (Exception $e) {
+                               echo 'Catched exception: ' . $e->getMessage() . PHP_EOL;
+                            }
                             break;
                         }
                     }
@@ -234,7 +242,12 @@ class DASBiT_Irc_Controller
             foreach ($this->_intervals as &$interval) {
                 if ($interval['nextUpdate'] <= $now) {
                     $interval['nextUpdate'] = ($now + $interval['duration']);
-                    call_user_func($interval['target']);
+                    
+                    try {
+                        call_user_func($interval['target']);
+                    } catch (Exception $e) {
+                       echo 'Catched exception: ' . $e->getMessage() . PHP_EOL;
+                    }
                 }
             }
         }
