@@ -203,7 +203,7 @@ class DASBiT_Irc_Controller
                 try {
                     call_user_func($method);
                 } catch (Exception $e) {
-                    echo 'Catched exception: ' . $e->getMessage() . PHP_EOL;
+                    $this->log('Catched exception: ' . $e->getMessage() . PHP_EOL);
                 }
             }
         }
@@ -230,7 +230,7 @@ class DASBiT_Irc_Controller
                             try {
                                 call_user_func($method, $request);
                             } catch (Exception $e) {
-                               echo 'Catched exception: ' . $e->getMessage() . PHP_EOL;
+                               $this->log('Catched exception: ' . $e->getMessage() . PHP_EOL);
                             }
                             break;
                         }
@@ -246,7 +246,7 @@ class DASBiT_Irc_Controller
                     try {
                         call_user_func($interval['target']);
                     } catch (Exception $e) {
-                       echo 'Catched exception: ' . $e->getMessage() . PHP_EOL;
+                       $this->log('Catched exception: ' . $e->getMessage() . PHP_EOL);
                     }
                 }
             }

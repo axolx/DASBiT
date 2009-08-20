@@ -418,7 +418,7 @@ class DASBiT_Irc_Client
                 break;
                 
             case '474':
-                $this->getLogger()->log('Cannot join channel ' . $words[2] . '(+b)');
+                $this->_controller->log('Cannot join channel ' . $words[2] . '(+b)');
                 break;
         }
     }
@@ -436,13 +436,13 @@ class DASBiT_Irc_Client
             }
 
             if ($this->_lastPongTime + 60 <= time()) {
-                $this->getLogger()->log('Maximum lag reached, reconnecting');
+                $this->_controller->log('Maximum lag reached, reconnecting');
                 
                 $this->_connect();
             }
             
             if ($this->_nickname !== $this->_currentNickname) {
-                $this->getLogger()->log('Trying to regain original nick');
+                $this->_controller->log('Trying to regain original nick');
                 
                 $this->_sendNickname();
             }
