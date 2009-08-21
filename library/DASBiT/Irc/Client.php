@@ -257,6 +257,7 @@ class DASBiT_Irc_Client
     protected function _dispatchLine($line)
     {
         $words = explode(' ', $line);
+		//$this->_controller->log($line);
         
         // Respond to ping
         if ($words[0] === 'PING' and isset($words[1]) === true) {
@@ -278,6 +279,9 @@ class DASBiT_Irc_Client
             } else {
                 $this->_dispatchCommandReply($responseCode, $line, $words);
             }
+			if($responseCode === 353){
+				$this->_controller->triggerHook('channellist', $words);
+			}
         } else if ($words[1] === 'PRIVMSG') {
             return $this->_parsePrivMsg($line, $words);
         } else {
@@ -337,6 +341,9 @@ class DASBiT_Irc_Client
                     
                     $this->_currentNickname = $this->_nickname;
                 }
+				preg_match('#^:([^!]+)!#', $words[0], $matches);
+				$newnick = ltrim($words[2], ":");
+				$this->_controller->triggerHook('changednick', array('oldnickname' => $matches[1], 'newnickname' => $newnick));
                 break;
                 
             case 'PONG':
@@ -347,18 +354,25 @@ class DASBiT_Irc_Client
                 if ($words[3] === $this->_currentNickname) {
                     // Self kicked from channel
                     $this->_controller->log('Kicked from ' . $words[2]);
-                    $this->_controller->hook('kicked');
+                    $this->_controller->triggerHook('kicked');
                 } else {
-                    // User kicked from channel
+					$this->_controller->triggerHook('userkicked', array('nickname' => $words[3], 'channel' => $words[2]));
                 }
                 break;
                 
             case 'JOIN':
-                // Someone joined a channel
-                break;
+				preg_match('#^:([^!]+)!#', $words[0], $matches);
+				$joinchannel = ltrim($words[2], ":");
+				$this->_controller->triggerHook('userjoin', array('nickname' => $matches[1], 'channel' => $joinchannel));
+			    break;
                 
             case 'PART':
-                // Someone parted a channel
+				preg_match('#^:([^!]+)!#', $words[0], $matches);
+				$this->_controller->triggerHook('userpart', array('nickname' => $matches[1], 'channel' => $words[2]));
+                break;
+			case 'QUIT':
+				preg_match('#^:([^!]+)!#', $words[0], $matches);
+				$this->_controller->triggerHook('userquit', array('nickname' => $matches[1]));
                 break;
         }
     }
@@ -381,7 +395,7 @@ class DASBiT_Irc_Client
 
                 $this->_delayTime = time();
                 
-                $this->_controller->hook('connected');
+                $this->_controller->triggerHook('connected');
                 break;
             
             // User list received

@@ -66,6 +66,7 @@ class Plugin_Channels extends DASBiT_Plugin
         
         foreach ($channels as $channel) {
             $this->_client->sendRaw('JOIN ' . $channel['channel_name']);
+			$this->_controller->triggerHook('channeljoined', array('channel' => $channel['channel_name']));
         }
     }
     

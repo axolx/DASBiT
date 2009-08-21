@@ -196,12 +196,12 @@ class DASBiT_Irc_Controller
      * @param  string $hook
      * @return void
      */
-    public function hook($hook)
+    public function triggerHook($hook, array $params = null)
     {
         if (isset($this->_hooks[$hook])) {
             foreach ($this->_hooks[$hook] as $method) {
                 try {
-                    call_user_func($method);
+                    call_user_func($method, $params);
                 } catch (Exception $e) {
                     $this->log('Catched exception: ' . $e->getMessage() . PHP_EOL);
                 }
