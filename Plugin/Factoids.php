@@ -73,13 +73,13 @@ class Plugin_Factoids extends DASBiT_Plugin
                        ->select()
                        ->from('factoids',
                               array('factoid_id'))
-                       ->where('factoid_name = ?', $matches[1]);
+                       ->where('factoid_name = ?', strtolower($matches[1]));
                        
         $factoid = $this->_adapter->fetchRow($select);
         
         if ($factoid === false) {
             $this->_adapter->insert('factoids', array(
-                'factoid_name'        => $matches[1],
+                'factoid_name'        => strtolower($matches[1]),
                 'factoid_description' => $matches[2]
             ));
         } else {
@@ -115,7 +115,7 @@ class Plugin_Factoids extends DASBiT_Plugin
                        ->select()
                        ->from('factoids',
                               array('factoid_id'))
-                       ->where('factoid_name = ?', implode(' ', $words));
+                       ->where('factoid_name = ?', strtolower(implode(' ', $words)));
                        
         $factoid = $this->_adapter->fetchRow($select);
         
@@ -159,7 +159,7 @@ class Plugin_Factoids extends DASBiT_Plugin
                        ->select()
                        ->from('factoids',
                               array('factoid_description'))
-                       ->where('factoid_name = ?', $factoidName);
+                       ->where('factoid_name = ?', strtolower($factoidName));
                        
         $factoid = $this->_adapter->fetchRow($select);
         
