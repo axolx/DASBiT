@@ -115,7 +115,7 @@ class Plugin_Factoids extends DASBiT_Plugin
                        ->select()
                        ->from('factoids',
                               array('factoid_id'))
-                       ->where('factoid_name = ?', $implode(' ', $words));
+                       ->where('factoid_name = ?', implode(' ', $words));
                        
         $factoid = $this->_adapter->fetchRow($select);
         
