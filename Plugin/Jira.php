@@ -86,7 +86,7 @@ class Plugin_Jira extends DASBiT_Plugin
             $issueId = 'ZF-' . $issueId;
         }
         
-        $uri     = sprintf('http://framework.zend.com/issues/si/jira.issueviews:issue-xml/%1$s/%1$s.xml', urlencode($issueId));
+        $uri = sprintf('http://framework.zend.com/issues/si/jira.issueviews:issue-xml/%1$s/%1$s.xml', urlencode($issueId));
         
         $client   = new Zend_Http_Client($uri);
         $response = $client->request();
@@ -119,8 +119,8 @@ class Plugin_Jira extends DASBiT_Plugin
         
         if ($tracker['tracker_last_issue'] === '') {
             $issues = $this->_getLatestIssues(1);
-            
-            if (!$issues && isset($issues->channel->item->key)) {
+
+            if (isset($issues->channel->item->key)) {
                 $lastIssue = (string) $issues->channel->item->key;
             } else {
                 $lastIssue = '';
@@ -129,7 +129,6 @@ class Plugin_Jira extends DASBiT_Plugin
             $this->_adapter->update('trackers',
                                     array('tracker_last_issue' => $lastIssue),
                                     'tracker_id = 1');
-                                    
             return;
         }
         

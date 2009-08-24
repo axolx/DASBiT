@@ -164,6 +164,7 @@ class Plugin_Svn extends DASBiT_Plugin
                        ->from('repositories',
                               array('repos_id',
                                     'repos_url',
+                                    'repos_channel',
                                     'repos_info_url',
                                     'repos_last_revision'))
                        ->where('repos_last_revision >= 0');
@@ -171,14 +172,14 @@ class Plugin_Svn extends DASBiT_Plugin
         $repositories = $this->_adapter->fetchAll($select);
         $client       = new Zend_Http_Client();
         
-        foreach ($repositories as $repository) {  
+        foreach ($repositories as $repository) { 
             $commits = $this->_getCommits($repository['repos_url'], ($repository['repos_last_revision'] + 1) . ':HEAD');
             
             foreach ($commits as $commit) {
                 $response = sprintf('[SVN:r%d:%s] %s',
                                     $commit['revision'],
                                     $commit['username'],
-                                    $commit['message']);
+                                    $commit['content']);
                                     
                 if (!empty($repository['repos_info_url'])) {
                     $url = str_replace('%r', $commit['revision'], $repository['repos_info_url']);
@@ -193,7 +194,7 @@ class Plugin_Svn extends DASBiT_Plugin
                     $response .= sprintf(' (See: %s)', $url);
                 }
     
-                $this->_client->send($response, $request);
+                $this->_client->send($response, $repository['repos_channel']);
                 
                 $this->_adapter->update('repositories',
                                         array('repos_last_revision' => $commit['revision']),
@@ -211,7 +212,7 @@ class Plugin_Svn extends DASBiT_Plugin
      */
     protected function _getCommits($url, $range)
     {
-        $logResults = explode("\n", shell_exec('svn log --non-interactive -r' . $range . ' ' . $url));
+        $logResults = explode("\n", shell_exec('svn log --non-interactive -r' . $range . ' ' . $url . '  2>&1'));
         $commits    = array();
 
         foreach ($logResults as $totalLineNum => $content) {
