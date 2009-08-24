@@ -185,10 +185,10 @@ class Plugin_Svn extends DASBiT_Plugin
                     $url = str_replace('%r', $commit['revision'], $repository['repos_info_url']);
                     
                     $client->setUri('http://tinyurl.com/api-create.php?url=' . $url);
-                    $response = $client->request();
+                    $httpResponse = $client->request();
                     
-                    if ($response->isSuccessful()) {
-                        $url = $response->getBody();   
+                    if ($httpResponse->isSuccessful()) {
+                        $url = $httpResponse->getBody();   
                     }
                     
                     $response .= sprintf(' (See: %s)', $url);
