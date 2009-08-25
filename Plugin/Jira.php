@@ -43,9 +43,7 @@ class Plugin_Jira extends DASBiT_Plugin
         $this->_adapter = DASBiT_Database::accessDatabase('jira', array(
             'trackers' => array(
                 'tracker_id'         => 'INTEGER PRIMARY KEY',
-                'tracker_last_issue' => 'VARCHAR(16)',
-            )
-        ));
+                'tracker_last_issue' => 'VARCHAR(16)')));
         
         $select = $this->_adapter
                        ->select()
