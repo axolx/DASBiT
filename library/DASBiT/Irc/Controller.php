@@ -60,6 +60,13 @@ class DASBiT_Irc_Controller
     protected $_hooks = array();
     
     /**
+     * List of registered triggers
+     *
+     * @var array
+     */
+    protected $_triggers = array();
+    
+    /**
      * Intervalled triggers
      *
      * @var array
@@ -161,6 +168,18 @@ class DASBiT_Irc_Controller
     }
     
     /**
+     * Register a new trigger to the controller
+     *
+     * @param DASBiT_Plugin $plugin
+     * @param string        $method
+     * @param string        $regex
+     */
+    public function registerTrigger(DASBiT_Plugin $plugin, $method, $regex)
+    {
+        $this->_triggers[$regex] = array($plugin, $method);
+    }
+    
+    /**
      * Register a new hook to the controller
      *
      * @param DASBiT_Plugin $plugin
@@ -221,6 +240,12 @@ class DASBiT_Irc_Controller
             
             foreach ($requests as $request) {
                 $message = $request->getMessage();
+                
+                foreach ($this->_triggers as $regex => $method) {
+                    if (preg_match('#' . $regex . '#', $message)) {
+                        call_user_func($method, $request);
+                    }
+                }
                 
                 if ($message[0] === $this->_config->common->prefix) {
                     $commandMessage = substr($message, 1);

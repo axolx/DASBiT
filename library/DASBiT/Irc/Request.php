@@ -88,7 +88,10 @@ class DASBiT_Irc_Request
      */
     public function __construct($line, $currentNickname)
     {
-        preg_match("#^:(([^!]+)!([^@]+)@([^ ]+)) PRIVMSG ([^ ]+) :(([^ ]+).*)$#", $line, $match);
+        if (!preg_match("#^:(([^!]+)!([^@]+)@([^ ]+)) PRIVMSG ([^ ]+) :(([^ ]+).*)$#", $line, $match)) {
+            echo 'DEBUG: Could not parse PRIVMSG: ' . $line . "\n";
+            return;
+        }
         
         list(,
              $this->_ident,

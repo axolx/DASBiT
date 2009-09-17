@@ -43,7 +43,9 @@ class Plugin_Jira extends DASBiT_Plugin
         $this->_adapter = DASBiT_Database::accessDatabase('jira', array(
             'trackers' => array(
                 'tracker_id'         => 'INTEGER PRIMARY KEY',
-                'tracker_last_issue' => 'VARCHAR(16)')));
+                'tracker_last_issue' => 'VARCHAR(16)'
+            )
+        ));
         
         $select = $this->_adapter
                        ->select()
@@ -61,6 +63,43 @@ class Plugin_Jira extends DASBiT_Plugin
         
         $this->_controller->registerCommand($this, 'lookupIssue', 'issue');
         $this->_controller->registerInterval($this, 'watchUpdates', 120);
+        $this->_controller->registerTrigger($this, 'lookupIssues', '@ZF-\d+');
+    }
+    
+    /**
+     * Lookup triggered issues
+     * 
+     * @param  DASBiT_Irc_Request $request
+     * @return void
+     */
+    public function lookupIssues(DASBiT_Irc_Request $request)
+    {
+        preg_match_all('#@ZF-(\d+)#i', $request->getMessage(), $matches, PREG_SET_ORDER);
+        
+        foreach ($matches as $match) {
+            $issueId = 'ZF-' . $match[1];
+            
+            $uri = sprintf('http://framework.zend.com/issues/si/jira.issueviews:issue-xml/%1$s/%1$s.xml', urlencode($issueId));
+            
+            $client   = new Zend_Http_Client($uri);
+            $response = $client->request();
+    
+            if (!$response->isSuccessful()) {
+                $this->_client->send('No issue with this ID found', $request);
+                continue;
+            }
+            
+            $xml = @simplexml_load_string($response->getBody());
+            
+            if (!$xml) {
+                $this->_client->send('Unable to reach JIRA', $request);
+                continue;    
+            }
+            
+            $item = $xml->channel->item;
+                    
+            $this->_reportIssue('Issue', $item, $request);
+        }
     }
     
     /**
@@ -94,7 +133,13 @@ class Plugin_Jira extends DASBiT_Plugin
             return;
         }
         
-        $xml  = simplexml_load_string($response->getBody());
+        $xml = @simplexml_load_string($response->getBody());
+        
+        if (!$xml) {
+            $this->_client->send('Unable to reach JIRA', $request);
+            return;    
+        }
+        
         $item = $xml->channel->item;
                 
         $this->_reportIssue('Issue', $item, $request);
@@ -189,7 +234,13 @@ class Plugin_Jira extends DASBiT_Plugin
             return null;
         }
         
-        return simplexml_load_string($response->getBody());
+        $xml = @simplexml_load_string($response->getBody());
+        
+        if (!$xml) {
+            return null;
+        }
+        
+        return $xml;
     }
     
     /**
