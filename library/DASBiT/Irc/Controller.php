@@ -242,7 +242,7 @@ class DASBiT_Irc_Controller
                 $message = $request->getMessage();
                 
                 foreach ($this->_triggers as $regex => $method) {
-                    if (preg_match('#' . $regex . '#', $message)) {
+                    if (preg_match($regex, $message)) {
                         call_user_func($method, $request);
                     }
                 }

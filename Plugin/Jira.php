@@ -63,7 +63,7 @@ class Plugin_Jira extends DASBiT_Plugin
         
         $this->_controller->registerCommand($this, 'lookupIssue', 'issue');
         $this->_controller->registerInterval($this, 'watchUpdates', 120);
-        $this->_controller->registerTrigger($this, 'lookupIssues', '@ZF-\d+');
+        $this->_controller->registerTrigger($this, 'lookupIssues', '#@ZF-\d+#i');
     }
     
     /**
