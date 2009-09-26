@@ -219,6 +219,8 @@ class DASBiT_Irc_Controller
     {
         if (isset($this->_hooks[$hook])) {
             foreach ($this->_hooks[$hook] as $method) {
+                $this->log('Triggering hook: ' . $hook);
+                
                 try {
                     call_user_func($method, $params);
                 } catch (Exception $e) {
@@ -243,6 +245,8 @@ class DASBiT_Irc_Controller
                 
                 foreach ($this->_triggers as $regex => $method) {
                     if (preg_match($regex, $message)) {
+                        $this->log('Trigger activated: ' . $regex);
+                        
                         try {
                             call_user_func($method, $request);
                         } catch (Exception $e) {
@@ -256,6 +260,8 @@ class DASBiT_Irc_Controller
 
                     foreach ($this->_commands as $command => $method) {
                         if (preg_match('#^' . preg_quote($command, '#') . ' #', $commandMessage)) {
+                            $this->log('Command used: ' . $command);
+                            
                             try {
                                 call_user_func($method, $request);
                             } catch (Exception $e) {
@@ -270,6 +276,8 @@ class DASBiT_Irc_Controller
             $now = time();
             foreach ($this->_intervals as &$interval) {
                 if ($interval['nextUpdate'] <= $now) {
+                    $this->log('Interval triggered: ' . $interval['target'][1]);
+                    
                     $interval['nextUpdate'] = ($now + $interval['duration']);
                     
                     try {
