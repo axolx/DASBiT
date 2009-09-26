@@ -222,7 +222,7 @@ class DASBiT_Irc_Controller
                 try {
                     call_user_func($method, $params);
                 } catch (Exception $e) {
-                    $this->log('Catched exception: ' . $e->getMessage() . PHP_EOL);
+                    $this->log('Caught exception: ' . $e->getMessage() . PHP_EOL);
                 }
             }
         }
@@ -243,7 +243,11 @@ class DASBiT_Irc_Controller
                 
                 foreach ($this->_triggers as $regex => $method) {
                     if (preg_match($regex, $message)) {
-                        call_user_func($method, $request);
+                        try {
+                            call_user_func($method, $request);
+                        } catch (Exception $e) {
+                            $this->log('Caught exception: ' . $e->getMessage() . PHP_EOL);
+                        }
                     }
                 }
                 
@@ -255,7 +259,7 @@ class DASBiT_Irc_Controller
                             try {
                                 call_user_func($method, $request);
                             } catch (Exception $e) {
-                               $this->log('Catched exception: ' . $e->getMessage() . PHP_EOL);
+                               $this->log('Caught exception: ' . $e->getMessage() . PHP_EOL);
                             }
                             break;
                         }
@@ -271,7 +275,7 @@ class DASBiT_Irc_Controller
                     try {
                         call_user_func($interval['target']);
                     } catch (Exception $e) {
-                       $this->log('Catched exception: ' . $e->getMessage() . PHP_EOL);
+                       $this->log('Caught exception: ' . $e->getMessage() . PHP_EOL);
                     }
                 }
             }

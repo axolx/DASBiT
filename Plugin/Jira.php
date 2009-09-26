@@ -91,7 +91,7 @@ class Plugin_Jira extends DASBiT_Plugin
             
             $xml = @simplexml_load_string($response->getBody());
             
-            if (!$xml) {
+            if (!$xml || !isset($xml->channel->item)) {
                 $this->_client->send('Unable to reach JIRA', $request);
                 continue;    
             }
@@ -135,7 +135,7 @@ class Plugin_Jira extends DASBiT_Plugin
         
         $xml = @simplexml_load_string($response->getBody());
         
-        if (!$xml) {
+        if (!$xml || !isset($xml->channel->item)) {
             $this->_client->send('Unable to reach JIRA', $request);
             return;    
         }
@@ -236,7 +236,7 @@ class Plugin_Jira extends DASBiT_Plugin
         
         $xml = @simplexml_load_string($response->getBody());
         
-        if (!$xml) {
+        if (!$xml || !isset($xml->channel->item)) {
             return null;
         }
         
