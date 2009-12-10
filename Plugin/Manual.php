@@ -68,8 +68,7 @@ class Plugin_Manual extends DASBiT_Plugin
 
         $result = $data->responseData->results[0];
 
-        $matches = array();
-        if (preg_match('(^(.*) - Zend Framework: Documentation$)', '\1', $result->title, $matches)) {
+        if (preg_match('(^(.*) - Zend Framework: Documentation$)', $result->title, $matches)) {
             $description = strip_tags($matches[0]) . ' - ';
         } else {
             $description = '';
