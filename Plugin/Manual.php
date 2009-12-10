@@ -33,6 +33,7 @@ class Plugin_Manual extends DASBiT_Plugin
     {       
         $this->_controller->registerCommand($this, 'search', 'manual');
         $this->_controller->registerCommand($this, 'search', 'm');
+        $this->_controller->registerTrigger($this, 'postManualLink', '#rtfm#i');
     }
        
     /**
@@ -67,6 +68,7 @@ class Plugin_Manual extends DASBiT_Plugin
 
         $result = $data->responseData->results[0];
 
+        $matches = array();
         if (preg_match('(^(.*) - Zend Framework: Documentation$)', '\1', $result->title, $matches)) {
             $description = strip_tags($matches[0]) . ' - ';
         } else {
@@ -78,6 +80,17 @@ class Plugin_Manual extends DASBiT_Plugin
         $client  = new Zend_Http_Client(sprintf('http://tinyurl.com/api-create.php?url=%s', urlencode($result->url)));
         $tinyUrl = $client->request()->getBody();
 
-        $this->_client->send($description . '; ' . $tinyUrl, $request);
+        $this->_client->send(html_entity_decode($description, ENT_QUOTES, 'UTF-8') . ', ' . $tinyUrl, $request);
+    }
+
+    /**
+     * Respond with the manual link when somebody says 'rtfm'
+     *
+     * @param  DASBiT_Irc_Request $request
+     * @return void
+     */
+    public function postManualLink(DASBiT_Irc_Request $request)
+    {
+        $this->_client->send('http://framework.zend.com/manual/en/', $request);
     }
 }
