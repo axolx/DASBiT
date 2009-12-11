@@ -46,6 +46,13 @@ class Plugin_Manual extends DASBiT_Plugin
     {
         $searchTerms = implode(' ', array_slice($request->getWords(), 1));
 
+        if (preg_match('(^(.*) for ([A-Za-z\[\]\\\\`_^{|}][A-Za-z\[\]\\\\`_^{|}\-0-9]*)$)', $searchTerms, $matches)) {
+            $searchTerms = $matches[1];
+            $targetUser  = $matches[2];
+        } else {
+            $targetUser = $request->getNickname();
+        }
+
         $client = new Zend_Http_Client();
         $client->setParameterGet('v', '1.0')
                ->setParameterGet('q', $searchTerms . ' site:http://framework.zend.com/manual/en/')
@@ -68,18 +75,7 @@ class Plugin_Manual extends DASBiT_Plugin
 
         $result = $data->responseData->results[0];
 
-        if (preg_match('(^(.*) - Zend Framework: Documentation$)', $result->title, $matches)) {
-            $description = strip_tags($matches[0]) . ' - ';
-        } else {
-            $description = '';
-        }
-
-        $description .= strip_tags($result->content);
-
-        $client  = new Zend_Http_Client(sprintf('http://tinyurl.com/api-create.php?url=%s', urlencode($result->url)));
-        $tinyUrl = $client->request()->getBody();
-
-        $this->_client->send(html_entity_decode($description, ENT_QUOTES, 'UTF-8') . ', ' . $tinyUrl, $request);
+        $this->_client->send($targetUser . ', see' . $result->url, $request);
     }
 
     /**
