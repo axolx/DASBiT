@@ -75,7 +75,7 @@ class Plugin_Manual extends DASBiT_Plugin
 
         $result = $data->responseData->results[0];
 
-        $this->_client->send($targetUser . ', see' . $result->url, $request);
+        $this->_client->send($targetUser . ', see ' . $result->url, $request);
     }
 
     /**
