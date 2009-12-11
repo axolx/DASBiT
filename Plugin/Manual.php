@@ -63,14 +63,17 @@ class Plugin_Manual extends DASBiT_Plugin
 
         if (!$result->isSuccessful()) {
             $this->_client->send('An error occured while querying the search engine', $request, DASBiT_Irc_Client::TYPE_NOTICE);
+            return;
         }
 
         $data = json_decode($result->getBody());
 
         if ($data === null) {
             $this->_client->send('An error occured while processing the result', $request, DASBiT_Irc_Client::TYPE_NOTICE);
+            return;
         } elseif (!isset($data->responseData->results[0])) {
             $this->_client->send('Nothing found', $request);
+            return;
         }
 
         $result = $data->responseData->results[0];
