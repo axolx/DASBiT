@@ -31,7 +31,7 @@ class Plugin_Nickserv extends DASBiT_Plugin
      */
     protected function _init()
     {
-        $this->_controller->registerHook($this, 'connected', 'connected');
+        $this->_controller->registerHook($this, 'connected', 'connected', 100);
     }
     
     /**

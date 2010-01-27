@@ -185,14 +185,19 @@ class DASBiT_Irc_Controller
      * @param DASBiT_Plugin $plugin
      * @param string        $method
      * @param string        $hook
+     * @param integer       $priority
      */
-    public function registerHook(DASBiT_Plugin $plugin, $method, $hook)
+    public function registerHook(DASBiT_Plugin $plugin, $method, $hook, $priority = null)
     {
         if (!isset($this->_hooks[$hook])) {
             $this->_hooks[$hook] = array();
         }
         
-        $this->_hooks[$hook][] = array($plugin, $method);
+        if ($priority === null) {
+            $priority = count($this->_hooks[$hook]);
+        }
+
+        $this->_hooks[$hook][$priority] = array($plugin, $method);
     }
     
     /**
@@ -218,7 +223,10 @@ class DASBiT_Irc_Controller
     public function triggerHook($hook, array $params = null)
     {
         if (isset($this->_hooks[$hook])) {
-            foreach ($this->_hooks[$hook] as $method) {
+            $hooks = $this->_hooks[$hook];
+            ksort($hooks);
+
+            foreach ($hooks as $method) {
                 $this->log('Triggering hook: ' . $hook);
                 
                 try {
