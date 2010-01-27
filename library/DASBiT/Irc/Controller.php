@@ -224,7 +224,7 @@ class DASBiT_Irc_Controller
     {
         if (isset($this->_hooks[$hook])) {
             $hooks = $this->_hooks[$hook];
-            ksort($hooks);
+            krsort($hooks);
 
             foreach ($hooks as $method) {
                 $this->log('Triggering hook: ' . $hook);
