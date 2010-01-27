@@ -9,4 +9,8 @@
         <hostname>irc.freenode.net</hostname>
         <port>8000</port>
     </server>
+    <nickserv>
+        <username></username>
+        <password></password>
+    </nickserv>
 </config>
