@@ -45,7 +45,7 @@ class Plugin_Factoids extends DASBiT_Plugin
                 'factoid_description' => 'TEXT',
             ),
             'aliases' => array(
-                'factoid_id' => 'INTEGER PRIMARY KEY',
+                'alias_id'   => 'INTEGER PRIMARY KEY',
                 'alias_from' => 'VARCHAR(128)',
                 'alias_to'   => 'TEXT',
             ),
