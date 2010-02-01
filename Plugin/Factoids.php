@@ -56,7 +56,7 @@ class Plugin_Factoids extends DASBiT_Plugin
         $this->_controller->registerCommand($this, 'addAlias', 'alias add');
         $this->_controller->registerCommand($this, 'removeAlias', 'alias remove');
         $this->_controller->registerCommand($this, 'tell', 'tell');
-        $this->_controller->registerTrigger($this, 'tell', '#.#');
+        $this->_controller->registerTrigger($this, 'tell', '#^(?!.*tell )#');
     }
        
     /**
@@ -227,7 +227,7 @@ class Plugin_Factoids extends DASBiT_Plugin
         $command     = $commandData[0];
 
         if (!preg_match('(tell$)', $command)) {
-            $nickname    = $request->getNickname();
+            $nickname    = null;
             $factoidName = trim($request->getMessage());
             $reaction    = true;
         } else {
