@@ -43,7 +43,7 @@ class Plugin_Log extends DASBiT_Plugin
                 'log_id'        => 'INTEGER PRIMARY KEY',
                 'log_channel'   => 'VARCHAR(128)',
                 'log_timestamp' => 'INTEGER',
-                'log_user'      => 'TEXT',
+                'log_nickname'  => 'TEXT',
                 'log_message'   => 'TEXT'
             )
         ));
