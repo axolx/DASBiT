@@ -44,6 +44,8 @@ class Plugin_Svn extends DASBiT_Plugin
                 'repos_last_revision' => 'NUMBER',
                 'repos_channel'       => 'VARCHAR(40)',
                 'repos_url'           => 'VARCHAR(255)',
+                'repos_username'      => 'VARCHAR(255) NULL',
+                'repos_password'      => 'VARCHAR(255) NULL',
                 'repos_info_url'      => 'VARCHAR(255)'
             )
         ));
@@ -52,12 +54,15 @@ class Plugin_Svn extends DASBiT_Plugin
                        ->select()
                        ->from('repositories',
                               array('repos_id',
-                                    'repos_url'));
+                                    'repos_url',
+                                    'repos_username',
+                                    'repos_password',
+                                    'repos_last_revision'));
                               
         $repositories = $this->_adapter->fetchAll($select);
         
         foreach ($repositories as $repository) {
-            $latestCommit = $this->_getCommits($repository['repos_url'], 'HEAD');
+            $latestCommit = $this->_getCommits($repository['repos_url'], 'HEAD', $repository['repos_username'], $repository['repos_password']);
 
             if (count($latestCommit) > 0) {
                 $lastRevision = $latestCommit[0]['revision'];
@@ -94,18 +99,27 @@ class Plugin_Svn extends DASBiT_Plugin
             $this->_client->send('Not enough arguments, channel and url required', $request, DASBiT_Irc_Client::TYPE_NOTICE);
             return;
         }
-        
+        $uri = parse_url($words[1]);
+        if(isset($uri['user']) || isset($uri['pass'])){
+            $urlUser = $uri['user'];
+            $urlPass = $uri['pass'];
+        }else{
+            $urlUser = NULL;
+            $urlPass = NULL;
+        }
+        $url = $uri['scheme'].'://'.$uri['host'].$uri['path'];
         $infoUrl      = (count($words) === 3) ? $words[2] : '';
-        $latestCommit = $this->_getCommits($words[1], 'HEAD');
+        $latestCommit = $this->_getCommits($url, 'HEAD', $urlUser, $urlPass);
         
         if (count($latestCommit) === 0) {
             $this->_client->send('Could not access SVN repository', $request, DASBiT_Irc_Client::TYPE_NOTICE);
             return;
         }
-        
         $this->_adapter->insert('repositories', array(
             'repos_channel'       => $words[0],
-            'repos_url'           => $words[1],
+            'repos_url'           => $url,
+            'repos_username'      => $urlUser,
+            'repos_password'      => $urlPass,
             'repos_info_url'      => $infoUrl,
             'repos_last_revision' => $latestCommit[0]['revision']
         ));
@@ -166,6 +180,8 @@ class Plugin_Svn extends DASBiT_Plugin
                                     'repos_url',
                                     'repos_channel',
                                     'repos_info_url',
+                                    'repos_username',
+                                    'repos_password',
                                     'repos_last_revision'))
                        ->where('repos_last_revision >= 0');
                               
@@ -173,7 +189,7 @@ class Plugin_Svn extends DASBiT_Plugin
         $client       = new Zend_Http_Client();
         
         foreach ($repositories as $repository) { 
-            $commits = $this->_getCommits($repository['repos_url'], ($repository['repos_last_revision'] + 1) . ':HEAD');
+            $commits = $this->_getCommits($repository['repos_url'], ($repository['repos_last_revision'] + 1) . ':HEAD', $repository['repos_username'], $repository['repos_password']);
             
             foreach ($commits as $commit) {
                 $response = sprintf('[SVN:r%d:%s] %s',
@@ -210,9 +226,13 @@ class Plugin_Svn extends DASBiT_Plugin
      * @param  string $range
      * @return array
      */
-    protected function _getCommits($url, $range)
+    protected function _getCommits($url, $range, $username = NULL, $password = NULL)
     {
-        $logResults = explode("\n", shell_exec('svn log --non-interactive -r' . $range . ' ' . $url . '  2>&1'));
+        if(isset($username) && isset($password)){
+            $logResults = explode("\n", shell_exec('svn log --username '.$username.' --password '.$password.' --non-interactive -r ' . $range . ' ' . $url . '  2>&1'));
+        }else{
+            $logResults = explode("\n", shell_exec('svn log --non-interactive -r ' . $range . ' ' . $url . '  2>&1'));
+        }
         $commits    = array();
 
         foreach ($logResults as $totalLineNum => $content) {
