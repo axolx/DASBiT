@@ -32,6 +32,7 @@ class Plugin_Nickserv extends DASBiT_Plugin
     protected function _init()
     {
         $this->_controller->registerHook($this, 'connected', 'connected', 100);
+        $this->_controller->registerHook($this, 'connected', 'changednick', 100);
     }
     
     /**
@@ -44,7 +45,7 @@ class Plugin_Nickserv extends DASBiT_Plugin
         $config = $this->_controller->getConfig()->nickserv;
 
         if (!empty($config->username) && !empty($config->password)) {
-            $this->_client->send('identify ' . $config->username . ' ' . $config->password, 'nickserv');
+            $this->_client->send('identify ' . $config->password, 'nickserv');
         }
     }
 }

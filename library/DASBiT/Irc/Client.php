@@ -279,11 +279,13 @@ class DASBiT_Irc_Client
             } else {
                 $this->_dispatchCommandReply($responseCode, $line, $words);
             }
-			if($responseCode === 353){
-				$this->_controller->triggerHook('channellist', $words);
-			}
+            if($responseCode === 353){
+                $this->_controller->triggerHook('channellist', $words);
+            }
         } else if ($words[1] === 'PRIVMSG') {
             return $this->_parsePrivMsg($line, $words);
+        } else if ($words[1] === 'NOTICE'){
+            $this->_controller->triggerHook('notice', $words);
         } else {
             // Else handle the command
             $this->_dispatchCommand($words[1], $line, $words);
