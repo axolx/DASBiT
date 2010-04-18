@@ -279,13 +279,17 @@ class DASBiT_Irc_Client
             } else {
                 $this->_dispatchCommandReply($responseCode, $line, $words);
             }
-            if($responseCode === 353){
+            
+            if ($responseCode === 353) {
                 $this->_controller->triggerHook('channellist', $words);
             }
+            
         } else if ($words[1] === 'PRIVMSG') {
             return $this->_parsePrivMsg($line, $words);
-        } else if ($words[1] === 'NOTICE'){
+
+        } else if ($words[1] === 'NOTICE') {
             $this->_controller->triggerHook('notice', $words);
+
         } else {
             // Else handle the command
             $this->_dispatchCommand($words[1], $line, $words);
@@ -295,21 +299,29 @@ class DASBiT_Irc_Client
     }    
    
     /**
-     * Parse a privatem essage
+     * Parse a private message
      *
      * @param  string $line  The string frm the server
      * @param  array  $words The string splitted into words
-     * @return DASBiT_Irc_Request|null
+     * @return DASBiT_Irc_Request|null]
      */
     protected function _parsePrivMsg($line, array $words)
     {
         // See what this is
-        if (count($words) > 4 and $words[2] === $this->_currentNickname &&
-            strpos($words[3], chr(1) !== false)) {
+        if (count($words) >= 4 and $words[2] === $this->_currentNickname &&
+                strpos($words[3], chr(1) !== false)) {
             // Looks like a CTCP command
             if (preg_match('#^.*' . chr(1) . '([^ ]+)(.*)' . chr(1) . '.*$#', $line, $match) === 1) {
-                $ctcpCommand = strtoupper($matches[1]);
-                // @todo Handle some CTCP commands   
+                $ctcpCommand = strtoupper($match[1]);
+                $request = new DASBiT_Irc_Request($line, $this->_currentNickname);
+                switch($ctcpCommand){
+                    CASE 'VERSION':
+                        $this->send(chr(1) . $ctcpCommand . ' DASBiT PHP/Zend Framework IRC Bot v' . DASBiT_Version::getVersion() . chr(1),
+                                $request, DASBiT_Irc_Client::TYPE_NOTICE);
+                        break;
+                    CASE 'PING':
+                        break;
+                }
             }
             
             return null;

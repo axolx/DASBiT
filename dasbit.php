@@ -21,6 +21,7 @@
 
 // Enable full error reporting
 error_reporting(E_ALL | E_STRICT);
+ini_set("display_errors", 1);
 
 // Define data path
 define('DATA_PATH', dirname(__FILE__) . '/data');

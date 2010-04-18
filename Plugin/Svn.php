@@ -62,7 +62,8 @@ class Plugin_Svn extends DASBiT_Plugin
         $repositories = $this->_adapter->fetchAll($select);
         
         foreach ($repositories as $repository) {
-            $latestCommit = $this->_getCommits($repository['repos_url'], 'HEAD', $repository['repos_username'], $repository['repos_password']);
+            $latestCommit = $this->_getCommits($repository['repos_url'], 'HEAD',
+                    $repository['repos_username'], $repository['repos_password']);
 
             if (count($latestCommit) > 0) {
                 $lastRevision = $latestCommit[0]['revision'];
@@ -100,13 +101,15 @@ class Plugin_Svn extends DASBiT_Plugin
             return;
         }
         $uri = parse_url($words[1]);
-        if(isset($uri['user']) || isset($uri['pass'])){
+
+        if (isset($uri['user']) || isset($uri['pass'])) {
             $urlUser = $uri['user'];
             $urlPass = $uri['pass'];
         }else{
             $urlUser = NULL;
             $urlPass = NULL;
         }
+
         $url = $uri['scheme'].'://'.$uri['host'].$uri['path'];
         $infoUrl      = (count($words) === 3) ? $words[2] : '';
         $latestCommit = $this->_getCommits($url, 'HEAD', $urlUser, $urlPass);
@@ -228,11 +231,13 @@ class Plugin_Svn extends DASBiT_Plugin
      */
     protected function _getCommits($url, $range, $username = NULL, $password = NULL)
     {
-        if(isset($username) && isset($password)){
+        
+        if (isset($username) && isset($password)) {
             $logResults = explode("\n", shell_exec('svn log --username '.$username.' --password '.$password.' --non-interactive -r ' . $range . ' ' . $url . '  2>&1'));
         }else{
             $logResults = explode("\n", shell_exec('svn log --non-interactive -r ' . $range . ' ' . $url . '  2>&1'));
         }
+
         $commits    = array();
 
         foreach ($logResults as $totalLineNum => $content) {
