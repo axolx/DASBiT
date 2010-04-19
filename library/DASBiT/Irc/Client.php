@@ -316,10 +316,25 @@ class DASBiT_Irc_Client
                 $request = new DASBiT_Irc_Request($line, $this->_currentNickname);
                 switch($ctcpCommand){
                     CASE 'VERSION':
-                        $this->send(chr(1) . $ctcpCommand . ' DASBiT PHP/Zend Framework IRC Bot v' . DASBiT_Version::getVersion() . chr(1),
+                        $this->send(chr(1) . $ctcpCommand . ' DASBiT PHP/Zend Framework IRC Bot v' .
+                                DASBiT_Version::getVersion() . ' on ' . PHP_OS . chr(1),
                                 $request, DASBiT_Irc_Client::TYPE_NOTICE);
                         break;
                     CASE 'PING':
+                        $this->send(chr(1) . $ctcpCommand . $match[2] . chr(1),
+                                $request, DASBiT_Irc_Client::TYPE_NOTICE);
+                        break;
+                    CASE 'FINGER':
+                        break;
+                    CASE 'CLIENTINFO':
+                        break;
+                    CASE 'SOURCE':
+                        $this->send(chr(1) . $ctcpCommand . 'http://dasbit.svn.dasprids.de/' . chr(1),
+                                $request, DASBiT_Irc_Client::TYPE_NOTICE);
+                        break;
+                    default:
+                        $this->send(chr(1) . 'ERRMSG ' . $ctcpCommand . ' : Unknown query' . chr(1),
+                                $request, DASBiT_Irc_Client::TYPE_NOTICE);
                         break;
                 }
             }
