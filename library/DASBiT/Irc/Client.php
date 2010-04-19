@@ -329,7 +329,7 @@ class DASBiT_Irc_Client
                     CASE 'CLIENTINFO':
                         break;
                     CASE 'SOURCE':
-                        $this->send(chr(1) . $ctcpCommand . 'http://dasbit.svn.dasprids.de/' . chr(1),
+                        $this->send(chr(1) . $ctcpCommand . ' http://dasbit.svn.dasprids.de/' . chr(1),
                                 $request, DASBiT_Irc_Client::TYPE_NOTICE);
                         break;
                     default:
