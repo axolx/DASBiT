@@ -539,7 +539,7 @@ class DASBiT_Irc_Client
      */
     protected function _sendUsername()
     {
-        $this->sendRaw('USER ' . $this->_username . ' 2 3 :DASBiT');
+        $this->sendRaw('USER ' . $this->_username . ' 2 * :DASBiT');
     }
     
     /**
