@@ -328,6 +328,10 @@ class DASBiT_Irc_Client
                         break;
                     CASE 'CLIENTINFO':
                         break;
+		    CASE 'TIME':
+			$this->send(chr(1) . $ctcpCommand . ' ' . date('l jS \of F Y h:i:s A') . chr(1),
+                                $request, DASBiT_Irc_Client::TYPE_NOTICE);
+			break;
                     CASE 'SOURCE':
                         $this->send(chr(1) . $ctcpCommand . ' http://dasbit.svn.dasprids.de/' . chr(1),
                                 $request, DASBiT_Irc_Client::TYPE_NOTICE);
