@@ -7,7 +7,7 @@ final class DASBiT_Version
     /**
      * Application version, should be in the format <major>.<minor>.<mini>[<suffix>]
      */
-    const VERSION = '5.1.4';
+    const VERSION = '5.2.0';
 
     /**
      * Constants of version parts
