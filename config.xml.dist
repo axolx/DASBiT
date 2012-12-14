@@ -13,4 +13,8 @@
         <username></username>
         <password></password>
     </nickserv>
+    <redmine>
+      <domain>http://redmine.test.com/</domain>
+      <apiKey>...</apiKey>
+    </redmine>
 </config>
