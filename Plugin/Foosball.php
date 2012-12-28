@@ -63,7 +63,6 @@ class Plugin_Foosball extends DASBiT_Plugin
         ));
 
         $this->_controller->registerCommand($this, 'parseMatch', 'foos');
-        $this->_controller->registerTrigger($this, 'parseMatch', '#^(?!.*foos )#');
     }
 
     /**
