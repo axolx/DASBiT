@@ -127,10 +127,11 @@ class Plugin_Foosball extends DASBiT_Plugin
         }
         if (count($commandData) == 4 ) {
           $scores = $this->calculateScores($players['winner'], $players['loser']);
+          $this->logMatch($players['winner'], $players['loser']);
         }
         else if  (count($commandData) == 6 ){
           $scores = $this->calculateDoublesScores($players['winner'], $players['winner2'], $players['loser'], $players['loser2']);
-
+          $this->logMatch($players['winner'] . '+' . $players['winner2'], $players['loser'] . '+' .$players['loser2']);
         }
 
         if (isset($scores)) {
@@ -182,7 +183,7 @@ class Plugin_Foosball extends DASBiT_Plugin
       $winner_score = $winner_rating + ( $this->_kfactor * ( 1 - $winner_expected ) );
       $loser_score = $loser_rating + ( $this->_kfactor * ( 0 - $loser_expected ) );
 
-      //$this->logMatch($winner, $loser);
+
 
       return array (
         $winner => round($winner_score),
@@ -208,7 +209,6 @@ class Plugin_Foosball extends DASBiT_Plugin
       $winner_delta = $this->_kfactor * ( 1 - $winner_expected );
       $loser_delta = $this->_kfactor * ( 0 - $loser_expected );
 
-      $this->logMatch($winner . '+' . $winner2, $loser . '+' .$loser2);
 
       return array (
         $winner . ":doubles" => round($winner1_rating + $winner_delta),
@@ -302,6 +302,8 @@ class Plugin_Foosball extends DASBiT_Plugin
 
      return $players;
     }
+
+  //TODO add support to replay doubles matches
   protected function replayMatches(DASBiT_Irc_Request $request)
   {
     $select = $this->_adapter
