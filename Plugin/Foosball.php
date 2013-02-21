@@ -82,7 +82,11 @@ class Plugin_Foosball extends DASBiT_Plugin
         $command     = $commandData[1];
 
         if ($command == 'scores') {
-          return $this->getScores($request);
+          if ($commandData[2] == 'doubles'){
+            return $this->getDoublesScores($request);
+          } else {
+            return $this->getScores($request);
+          }
         }
 
         if ($command == 'addplayer'){
@@ -151,22 +155,54 @@ class Plugin_Foosball extends DASBiT_Plugin
      */
     public function getScores(DASBiT_Irc_Request $request)
     {
+        $doubles = '%doubles';
         $select = $this->_adapter
                        ->select()
                        ->from('foosball_scores',
                               array('name', 'score', 'max(date)'))
-                       ->group('name');
+                       ->group('name')
+                       ->where('name NOT LIKE ?', $doubles)
+                       ->order(array('score DESC'));
 
         $rows = $this->_adapter->fetchAll($select);
 
-        $scores = array();
+        $namekey = array_values(preg_grep('/name/', array_keys($rows[0])));
+        $scorekey = array_values(preg_grep('/score/', array_keys($rows[0])));
+
         foreach ($rows as $row) {
-          $scores[] = $row['name'] . ': ' . $row['score'];
+          $scores[] = $row[$namekey[0]] . ': ' . $row[$scorekey[0]];
         }
 
-        if ($scores) {
-          $this->_client->send(join(' | ', $scores), $request);
-        }
+      if ($scores) {
+        $this->_client->send(join(' | ', $scores), $request);
+      }
+    }
+
+    public function getDoublesScores(DASBiT_Irc_Request $request)
+    {
+
+      $doubles = '%doubles';
+      $select = $this->_adapter
+        ->select()
+        ->from('foosball_scores',
+        array('name', 'score', 'max(date)'))
+        ->group('name')
+        ->where('name LIKE ?', $doubles)
+        ->order(array('score DESC'));
+
+      $rows = $this->_adapter->fetchAll($select);
+
+      $namekey = array_values(preg_grep('/name/', array_keys($rows[0])));
+      $scorekey = array_values(preg_grep('/score/', array_keys($rows[0])));
+
+      foreach ($rows as $row) {
+        $scores[] = $row[$namekey[0]] . ': ' . $row[$scorekey[0]];
+      }
+
+      if ($scores) {
+        $this->_client->send(join(' | ', $scores), $request);
+      }
+
     }
 
     /**
