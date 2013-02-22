@@ -165,12 +165,10 @@ class Plugin_Foosball extends DASBiT_Plugin
                        ->order(array('score DESC'));
 
         $rows = $this->_adapter->fetchAll($select);
-
-        $namekey = array_values(preg_grep('/name/', array_keys($rows[0])));
-        $scorekey = array_values(preg_grep('/score/', array_keys($rows[0])));
+        $keys = array_keys($rows[0]);
 
         foreach ($rows as $row) {
-          $scores[] = $row[$namekey[0]] . ': ' . $row[$scorekey[0]];
+          $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]];
         }
 
       if ($scores) {
@@ -191,12 +189,10 @@ class Plugin_Foosball extends DASBiT_Plugin
         ->order(array('score DESC'));
 
       $rows = $this->_adapter->fetchAll($select);
-
-      $namekey = array_values(preg_grep('/name/', array_keys($rows[0])));
-      $scorekey = array_values(preg_grep('/score/', array_keys($rows[0])));
+      $keys = array_keys($rows[0]);
 
       foreach ($rows as $row) {
-        $scores[] = $row[$namekey[0]] . ': ' . $row[$scorekey[0]];
+        $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]];
       }
 
       if ($scores) {
