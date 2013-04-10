@@ -169,9 +169,10 @@ class Plugin_Foosball extends DASBiT_Plugin
                        ->order(array('score DESC'));
 
         $rows = $this->_adapter->fetchAll($select);
+        $keys = array_keys($rows[0]);
 
         foreach ($rows as $row) {
-          $scores[] = $row['name'] . ': ' . $row['score'] . ' (' . $row['matches'] . ')';
+          $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]] . ' (' . $row[$keys[2]] . ')';
         }
 
       if ($scores) {
