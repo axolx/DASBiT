@@ -82,7 +82,7 @@ class Plugin_Foosball extends DASBiT_Plugin
         $command     = $commandData[1];
 
         if ($command == 'scores') {
-          if ($commandData[2] == 'doubles'){
+          if (isset($commandData[2]) && $commandData[2] == 'doubles'){
             return $this->getDoublesScores($request);
           } else {
             return $this->getScores($request);
@@ -141,10 +141,14 @@ class Plugin_Foosball extends DASBiT_Plugin
         if (isset($scores)) {
           $scores_output = array();
 
+          // Find the score change.
+          $winner = key($scores);
+          $old_score = $this->getScore($winner);
           foreach ($scores as $user => $score) {
             $this->saveScore($user, $score);
             $scores_output[] = $user . ': ' . $score;
           }
+          $scores_output[] = '(±' . abs($old_score - $scores[$winner]) . ')';
 
           $this->_client->send('New scores: ' . join(' | ', $scores_output), $request);
         }
@@ -159,16 +163,15 @@ class Plugin_Foosball extends DASBiT_Plugin
         $select = $this->_adapter
                        ->select()
                        ->from('foosball_scores',
-                              array('name', 'score', 'max(date)'))
+                              array('name', 'score', 'max(date)', 'matches' => 'count(*)'))
                        ->group('name')
                        ->where('name NOT LIKE ?', $doubles)
                        ->order(array('score DESC'));
 
         $rows = $this->_adapter->fetchAll($select);
-        $keys = array_keys($rows[0]);
 
         foreach ($rows as $row) {
-          $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]];
+          $scores[] = $row['name'] . ': ' . $row['score'] . ' (' . $row['matches'] . ')';
         }
 
       if ($scores) {
@@ -183,7 +186,7 @@ class Plugin_Foosball extends DASBiT_Plugin
       $select = $this->_adapter
         ->select()
         ->from('foosball_scores',
-        array('name', 'score', 'max(date)'))
+        array('name', 'score', 'max(date)', 'matches' => 'count(*)'))
         ->group('name')
         ->where('name LIKE ?', $doubles)
         ->order(array('score DESC'));
@@ -192,7 +195,7 @@ class Plugin_Foosball extends DASBiT_Plugin
       $keys = array_keys($rows[0]);
 
       foreach ($rows as $row) {
-        $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]];
+        $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]] . ' (' . $row['matches'] . ')';
       }
 
       if ($scores) {
