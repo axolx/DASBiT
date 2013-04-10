@@ -163,7 +163,7 @@ class Plugin_Foosball extends DASBiT_Plugin
         $select = $this->_adapter
                        ->select()
                        ->from('foosball_scores',
-                              array('name', 'score', 'max(date)', 'matches' => 'count(*)'))
+                              array('name', 'score', 'max(date)', 'count(*)'))
                        ->group('name')
                        ->where('name NOT LIKE ?', $doubles)
                        ->order(array('score DESC'));
@@ -172,7 +172,7 @@ class Plugin_Foosball extends DASBiT_Plugin
         $keys = array_keys($rows[0]);
 
         foreach ($rows as $row) {
-          $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]] . ' (' . $row[$keys[2]] . ')';
+          $scores[] = $row[$keys[0]] . ': ' . $row[$keys[1]] . ' (' . $row[$keys[3]] . ')';
         }
 
       if ($scores) {
